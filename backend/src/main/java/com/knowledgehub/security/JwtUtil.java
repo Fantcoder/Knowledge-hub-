@@ -3,6 +3,7 @@ package com.knowledgehub.security;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -26,6 +27,21 @@ public class JwtUtil {
 
     @Value("${jwt.refresh-expiration}")
     private Long refreshExpiration;
+
+    @PostConstruct
+    public void validateSecret() {
+        if (secret == null || secret.isBlank()) {
+            throw new IllegalStateException(
+                    "JWT_SECRET is not configured! Set it via environment variable. " +
+                            "Generate one with: node -e \"console.log(require('crypto').randomBytes(32).toString('base64'))\"");
+        }
+        byte[] keyBytes = Decoders.BASE64.decode(secret);
+        if (keyBytes.length < 32) {
+            throw new IllegalStateException(
+                    "JWT_SECRET is too short (" + keyBytes.length + " bytes). Must be at least 32 bytes (256-bit).");
+        }
+        log.info("JWT secret validated successfully ({} bytes)", keyBytes.length);
+    }
 
     private SecretKey getSigningKey() {
         byte[] keyBytes = Decoders.BASE64.decode(secret);
