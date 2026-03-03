@@ -13,20 +13,52 @@ const initialState = {
     activeFilter: 'active',
     activeTag: null,
     viewMode: localStorage.getItem('viewMode') || 'grid',
+
+    // ── Pagination state ──────────────────────────────────────
+    currentPage: 0,
+    totalPages: 0,
+    totalElements: 0,
+    hasMore: false,
 }
 
 function notesReducer(state, action) {
     switch (action.type) {
         case 'SET_LOADING':
             return { ...state, isLoading: action.payload }
-        case 'SET_NOTES':
-            return { ...state, notes: action.payload, isLoading: false }
+        case 'SET_NOTES': {
+            const { content, totalPages, totalElements, last, number } = action.payload
+            return {
+                ...state,
+                notes: content,
+                currentPage: number,
+                totalPages,
+                totalElements,
+                hasMore: !last,
+                isLoading: false,
+            }
+        }
+        case 'APPEND_NOTES': {
+            const { content, totalPages, totalElements, last, number } = action.payload
+            return {
+                ...state,
+                notes: [...state.notes, ...content],
+                currentPage: number,
+                totalPages,
+                totalElements,
+                hasMore: !last,
+                isLoading: false,
+            }
+        }
         case 'SET_SELECTED_NOTE':
             return { ...state, selectedNote: action.payload }
         case 'SET_TAGS':
             return { ...state, tags: action.payload }
         case 'ADD_NOTE':
-            return { ...state, notes: [action.payload, ...state.notes] }
+            return {
+                ...state,
+                notes: [action.payload, ...state.notes],
+                totalElements: state.totalElements + 1,
+            }
         case 'UPDATE_NOTE':
             return {
                 ...state,
@@ -39,13 +71,17 @@ function notesReducer(state, action) {
                         : state.selectedNote,
             }
         case 'REMOVE_NOTE':
-            return { ...state, notes: state.notes.filter((n) => n.id !== action.payload) }
+            return {
+                ...state,
+                notes: state.notes.filter((n) => n.id !== action.payload),
+                totalElements: state.totalElements - 1,
+            }
         case 'SET_SEARCH':
             return { ...state, searchQuery: action.payload }
         case 'SET_FILTER':
-            return { ...state, activeFilter: action.payload, activeTag: null }
+            return { ...state, activeFilter: action.payload, activeTag: null, currentPage: 0 }
         case 'SET_TAG_FILTER':
-            return { ...state, activeTag: action.payload, activeFilter: 'active' }
+            return { ...state, activeTag: action.payload, activeFilter: 'active', currentPage: 0 }
         case 'SET_VIEW_MODE':
             localStorage.setItem('viewMode', action.payload)
             return { ...state, viewMode: action.payload }
@@ -59,17 +95,36 @@ export function NotesProvider({ children }) {
 
     const fetchRequestId = useRef(0)
 
-    const fetchNotes = useCallback(async (filter, tag) => {
+    const fetchNotes = useCallback(async (filter, tag, page = 0) => {
         const currentId = ++fetchRequestId.current
         dispatch({ type: 'SET_LOADING', payload: true })
         try {
-            const params = {}
+            const params = { page, size: 20 }
             if (filter && filter !== 'active') params.filter = filter
             if (tag) params.tag = tag
             const res = await noteService.getAll(params)
-            // Ignore if a newer request has started
             if (currentId !== fetchRequestId.current) return
-            dispatch({ type: 'SET_NOTES', payload: res.data.data || [] })
+
+            // Spring Page object is in res.data.data
+            const pageData = res.data.data
+            if (pageData && pageData.content !== undefined) {
+                dispatch({
+                    type: page === 0 ? 'SET_NOTES' : 'APPEND_NOTES',
+                    payload: pageData,
+                })
+            } else {
+                // Backwards compatibility: if backend returns plain array
+                dispatch({
+                    type: 'SET_NOTES',
+                    payload: {
+                        content: pageData || [],
+                        totalPages: 1,
+                        totalElements: (pageData || []).length,
+                        last: true,
+                        number: 0,
+                    },
+                })
+            }
         } catch (err) {
             if (currentId !== fetchRequestId.current) return
             dispatch({ type: 'SET_LOADING', payload: false })
@@ -77,11 +132,33 @@ export function NotesProvider({ children }) {
         }
     }, [])
 
-    const searchNotes = useCallback(async (query, tag) => {
+    const loadMore = useCallback(async () => {
+        if (!state.hasMore || state.isLoading) return
+        await fetchNotes(state.activeFilter, state.activeTag, state.currentPage + 1)
+    }, [state.hasMore, state.isLoading, state.activeFilter, state.activeTag, state.currentPage, fetchNotes])
+
+    const searchNotes = useCallback(async (query, tag, page = 0) => {
         dispatch({ type: 'SET_LOADING', payload: true })
         try {
-            const res = await noteService.search({ q: query, tag })
-            dispatch({ type: 'SET_NOTES', payload: res.data.data || [] })
+            const res = await noteService.search({ q: query, tag, page, size: 20 })
+            const pageData = res.data.data
+            if (pageData && pageData.content !== undefined) {
+                dispatch({
+                    type: page === 0 ? 'SET_NOTES' : 'APPEND_NOTES',
+                    payload: pageData,
+                })
+            } else {
+                dispatch({
+                    type: 'SET_NOTES',
+                    payload: {
+                        content: pageData || [],
+                        totalPages: 1,
+                        totalElements: (pageData || []).length,
+                        last: true,
+                        number: 0,
+                    },
+                })
+            }
         } catch {
             dispatch({ type: 'SET_LOADING', payload: false })
         }
@@ -109,7 +186,7 @@ export function NotesProvider({ children }) {
 
     const restoreNote = useCallback(async (id) => {
         try {
-            const res = await noteService.restore(id)
+            await noteService.restore(id)
             dispatch({ type: 'REMOVE_NOTE', payload: id })
             toast.success('Note restored')
         } catch {
@@ -142,6 +219,7 @@ export function NotesProvider({ children }) {
                 ...state,
                 dispatch,
                 fetchNotes,
+                loadMore,
                 searchNotes,
                 deleteNote,
                 permanentDeleteNote,

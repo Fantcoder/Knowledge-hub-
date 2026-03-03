@@ -10,6 +10,8 @@ import com.knowledgehub.repository.LinkRepository;
 import com.knowledgehub.repository.NoteRepository;
 import com.knowledgehub.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -52,6 +54,15 @@ public class LinkService {
         return toResponse(linkRepository.save(link));
     }
 
+    // Paginated (for API)
+    @Transactional(readOnly = true)
+    public Page<LinkResponse> getLinksPaged(Pageable pageable) {
+        User user = getCurrentUser();
+        return linkRepository.findByUserOrderByCreatedAtDesc(user, pageable)
+                .map(this::toResponse);
+    }
+
+    // Non-paginated (for export)
     @Transactional(readOnly = true)
     public List<LinkResponse> getLinks() {
         User user = getCurrentUser();

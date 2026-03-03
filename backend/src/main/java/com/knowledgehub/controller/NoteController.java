@@ -6,11 +6,13 @@ import com.knowledgehub.dto.response.NoteResponse;
 import com.knowledgehub.service.NoteService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/notes")
@@ -20,10 +22,11 @@ public class NoteController {
     private final NoteService noteService;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<NoteResponse>>> getNotes(
+    public ResponseEntity<ApiResponse<Page<NoteResponse>>> getNotes(
             @RequestParam(required = false) String filter,
-            @RequestParam(required = false) String tag) {
-        return ResponseEntity.ok(ApiResponse.success(noteService.getNotes(filter, tag)));
+            @RequestParam(required = false) String tag,
+            @PageableDefault(size = 20, sort = "updatedAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        return ResponseEntity.ok(ApiResponse.success(noteService.getNotesPaged(filter, tag, pageable)));
     }
 
     @PostMapping
@@ -73,9 +76,10 @@ public class NoteController {
     }
 
     @GetMapping("/search")
-    public ResponseEntity<ApiResponse<List<NoteResponse>>> search(
+    public ResponseEntity<ApiResponse<Page<NoteResponse>>> search(
             @RequestParam(required = false) String q,
-            @RequestParam(required = false) String tag) {
-        return ResponseEntity.ok(ApiResponse.success(noteService.searchNotes(q, tag)));
+            @RequestParam(required = false) String tag,
+            @PageableDefault(size = 20, sort = "updatedAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        return ResponseEntity.ok(ApiResponse.success(noteService.searchNotesPaged(q, tag, pageable)));
     }
 }

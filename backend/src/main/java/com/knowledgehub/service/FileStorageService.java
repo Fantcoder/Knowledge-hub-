@@ -13,6 +13,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -139,6 +141,15 @@ public class FileStorageService {
                 .orElseThrow(() -> new ResourceNotFoundException("File", fileId));
     }
 
+    // Paginated (for API)
+    @Transactional(readOnly = true)
+    public Page<FileResponse> getUserFilesPaged(Pageable pageable) {
+        User user = getCurrentUser();
+        return fileRepository.findByUserOrderByUploadDateDesc(user, pageable)
+                .map(this::toResponse);
+    }
+
+    // Non-paginated (for internal use)
     @Transactional(readOnly = true)
     public List<FileResponse> getUserFiles() {
         User user = getCurrentUser();

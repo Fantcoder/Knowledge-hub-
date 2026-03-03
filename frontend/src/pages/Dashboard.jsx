@@ -6,7 +6,10 @@ import TagFilter from '../components/tags/TagFilter'
 import { tagService } from '../services/tagService'
 
 export default function Dashboard() {
-    const { fetchNotes, notes, activeFilter, activeTag, searchQuery } = useNotes()
+    const {
+        fetchNotes, notes, activeFilter, activeTag, searchQuery,
+        hasMore, isLoading, loadMore, totalElements
+    } = useNotes()
     const navigate = useNavigate()
     const [tags, setTags] = useState([])
 
@@ -23,11 +26,18 @@ export default function Dashboard() {
     return (
         <div className="animate-in space-y-8">
             {/* Header */}
-            <div>
-                <h1 className="font-serif text-3xl text-ink">{title}</h1>
-                {searchQuery && (
-                    <p className="text-sm text-ink-faint mt-1">
-                        for "<span className="text-accent">{searchQuery}</span>"
+            <div className="flex items-baseline justify-between">
+                <div>
+                    <h1 className="font-serif text-3xl text-ink">{title}</h1>
+                    {searchQuery && (
+                        <p className="text-sm text-ink-faint mt-1">
+                            for "<span className="text-accent">{searchQuery}</span>"
+                        </p>
+                    )}
+                </div>
+                {totalElements > 0 && (
+                    <p className="text-xs text-ink-faint">
+                        {totalElements} {totalElements === 1 ? 'note' : 'notes'}
                     </p>
                 )}
             </div>
@@ -56,6 +66,31 @@ export default function Dashboard() {
                     emptyDescription={activeFilter === 'active' ? 'Start writing. Your first note is one click away.' : ''}
                 />
             </section>
+
+            {/* Load More */}
+            {hasMore && (
+                <div className="flex justify-center pt-4 pb-8">
+                    <button
+                        onClick={loadMore}
+                        disabled={isLoading}
+                        className="px-6 py-2.5 rounded-xl bg-surface-2 text-ink-muted 
+                                   hover:bg-surface-3 hover:text-ink transition-all duration-200 
+                                   text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        {isLoading ? (
+                            <span className="flex items-center gap-2">
+                                <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                </svg>
+                                Loading...
+                            </span>
+                        ) : (
+                            'Load more notes'
+                        )}
+                    </button>
+                </div>
+            )}
         </div>
     )
 }

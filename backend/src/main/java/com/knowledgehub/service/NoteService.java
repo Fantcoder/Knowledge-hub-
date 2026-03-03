@@ -13,6 +13,8 @@ import com.knowledgehub.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.jsoup.Jsoup;
 import org.jsoup.safety.Safelist;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -68,6 +70,57 @@ public class NoteService {
 
         return toResponse(noteRepository.save(note));
     }
+
+    // ── Paginated queries (for API controllers) ─────────────────────────
+
+    @Transactional(readOnly = true)
+    public Page<NoteResponse> getNotesPaged(String filter, String tagName, Pageable pageable) {
+        User user = getCurrentUser();
+
+        if (tagName != null && !tagName.isBlank()) {
+            return noteRepository.findByUserAndTagName(user, tagName, pageable)
+                    .map(this::toResponse);
+        }
+
+        return switch (filter != null ? filter : "active") {
+            case "archived" -> noteRepository
+                    .findByUserAndIsDeletedFalseAndIsArchivedTrueOrderByUpdatedAtDesc(user, pageable)
+                    .map(this::toResponse);
+            case "deleted" -> noteRepository
+                    .findByUserAndIsDeletedTrueOrderByUpdatedAtDesc(user, pageable)
+                    .map(this::toResponse);
+            case "pinned" -> noteRepository
+                    .findByUserAndIsPinnedTrueAndIsDeletedFalseOrderByUpdatedAtDesc(user, pageable)
+                    .map(this::toResponse);
+            default -> noteRepository
+                    .findByUserAndIsDeletedFalseAndIsArchivedFalseOrderByIsPinnedDescUpdatedAtDesc(user, pageable)
+                    .map(this::toResponse);
+        };
+    }
+
+    @Transactional(readOnly = true)
+    public Page<NoteResponse> searchNotesPaged(String query, String tagName, Pageable pageable) {
+        User user = getCurrentUser();
+
+        String pattern = query != null && !query.isBlank()
+                ? "%" + query.trim().toLowerCase() + "%"
+                : null;
+        String tag = tagName != null && !tagName.isBlank() ? tagName.trim().toLowerCase() : null;
+
+        if (pattern != null && tag != null) {
+            return noteRepository.searchByQueryAndTag(user, pattern, tag, pageable).map(this::toResponse);
+        } else if (pattern != null) {
+            return noteRepository.searchByQuery(user, pattern, pageable).map(this::toResponse);
+        } else if (tag != null) {
+            return noteRepository.findByUserAndTagName(user, tag, pageable).map(this::toResponse);
+        } else {
+            return noteRepository
+                    .findByUserAndIsDeletedFalseAndIsArchivedFalseOrderByIsPinnedDescUpdatedAtDesc(user, pageable)
+                    .map(this::toResponse);
+        }
+    }
+
+    // ── Non-paginated queries (for export, internal services) ───────────
 
     @Transactional(readOnly = true)
     public List<NoteResponse> getNotes(String filter, String tagName) {
@@ -167,30 +220,7 @@ public class NoteService {
         return toResponse(noteRepository.save(note));
     }
 
-    @Transactional(readOnly = true)
-    public List<NoteResponse> searchNotes(String query, String tagName) {
-        User user = getCurrentUser();
-        List<Note> results;
-
-        // Build a lowercase LIKE pattern — avoids Hibernate 6 lower() JPQL issue
-        String pattern = query != null && !query.isBlank()
-                ? "%" + query.trim().toLowerCase() + "%"
-                : null;
-        String tag = tagName != null && !tagName.isBlank() ? tagName.trim().toLowerCase() : null;
-
-        if (pattern != null && tag != null) {
-            results = noteRepository.searchByQueryAndTag(user, pattern, tag);
-        } else if (pattern != null) {
-            results = noteRepository.searchByQuery(user, pattern);
-        } else if (tag != null) {
-            results = noteRepository.findByUserAndTagName(user, tag);
-        } else {
-            results = noteRepository
-                    .findByUserAndIsDeletedFalseAndIsArchivedFalseOrderByIsPinnedDescUpdatedAtDesc(user);
-        }
-
-        return results.stream().map(this::toResponse).collect(Collectors.toList());
-    }
+    // ── Helpers ──────────────────────────────────────────────────────────
 
     private Set<Tag> resolveOrCreateTags(List<String> tagNames, User user) {
         if (tagNames == null || tagNames.isEmpty())
