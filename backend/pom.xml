@@ -66,6 +66,12 @@
             <artifactId>flyway-mysql</artifactId>
         </dependency>
 
+        <!-- Spring WebFlux (WebClient for OpenAI API calls) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webflux</artifactId>
+        </dependency>
+
         <!-- JWT -->
         <dependency>
             <groupId>io.jsonwebtoken</groupId>

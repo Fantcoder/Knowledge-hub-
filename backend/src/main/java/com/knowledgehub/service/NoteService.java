@@ -7,6 +7,7 @@ import com.knowledgehub.entity.Note;
 import com.knowledgehub.entity.Tag;
 import com.knowledgehub.entity.User;
 import com.knowledgehub.exception.ResourceNotFoundException;
+import com.knowledgehub.ai.service.EmbeddingService;
 import com.knowledgehub.repository.NoteRepository;
 import com.knowledgehub.repository.TagRepository;
 import com.knowledgehub.repository.UserRepository;
@@ -31,6 +32,7 @@ public class NoteService {
     private final NoteRepository noteRepository;
     private final UserRepository userRepository;
     private final TagRepository tagRepository;
+    private final EmbeddingService embeddingService;
 
     private User getCurrentUser() {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -68,7 +70,15 @@ public class NoteService {
                 .tags(tags)
                 .build();
 
-        return toResponse(noteRepository.save(note));
+        Note savedNote = noteRepository.save(note);
+
+        // Async: generate embedding for AI search (non-blocking)
+        try {
+            embeddingService.embedNoteAsync(savedNote);
+        } catch (Exception ignored) {
+        }
+
+        return toResponse(savedNote);
     }
 
     // ── Paginated queries (for API controllers) ─────────────────────────
@@ -170,7 +180,15 @@ public class NoteService {
             note.setTags(resolveOrCreateTags(request.getTags(), user));
         }
 
-        return toResponse(noteRepository.save(note));
+        Note savedNote = noteRepository.save(note);
+
+        // Async: re-generate embedding if content changed
+        try {
+            embeddingService.embedNoteAsync(savedNote);
+        } catch (Exception ignored) {
+        }
+
+        return toResponse(savedNote);
     }
 
     @Transactional
