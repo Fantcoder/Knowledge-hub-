@@ -10,25 +10,28 @@ import org.springframework.web.reactive.function.client.WebClient;
 @EnableAsync
 public class AiConfig {
 
-    @Value("${openai.api-key:}")
-    private String openAiApiKey;
+    @Value("${ai.api-key:}")
+    private String aiApiKey;
 
-    @Value("${openai.base-url:https://api.openai.com/v1}")
-    private String openAiBaseUrl;
+    @Value("${ai.base-url:https://openrouter.ai/api/v1}")
+    private String aiBaseUrl;
 
     @Bean
-    public WebClient openAiWebClient() {
+    public WebClient aiWebClient() {
         return WebClient.builder()
-                .baseUrl(openAiBaseUrl)
-                .defaultHeader("Authorization", "Bearer " + openAiApiKey)
+                .baseUrl(aiBaseUrl)
+                .defaultHeader("Authorization", "Bearer " + aiApiKey)
                 .defaultHeader("Content-Type", "application/json")
+                // OpenRouter recommended headers
+                .defaultHeader("HTTP-Referer", "https://knowledgehub.app")
+                .defaultHeader("X-Title", "KnowledgeHub")
                 .codecs(configurer -> configurer
                         .defaultCodecs()
-                        .maxInMemorySize(16 * 1024 * 1024)) // 16MB for large responses
+                        .maxInMemorySize(16 * 1024 * 1024))
                 .build();
     }
 
     public boolean isConfigured() {
-        return openAiApiKey != null && !openAiApiKey.isBlank();
+        return aiApiKey != null && !aiApiKey.isBlank();
     }
 }

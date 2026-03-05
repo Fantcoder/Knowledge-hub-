@@ -6,77 +6,109 @@ import com.knowledgehub.entity.Note;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.reactive.function.client.WebClient;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
-import java.util.HexFormat;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
+/**
+ * Local Embedding Service — generates keyword-based embeddings
+ * entirely on-device with ZERO API calls (free forever).
+ *
+ * Uses feature hashing ("hashing trick") to convert text into
+ * a fixed-dimension vector. Each word is hashed to a position
+ * in the vector, weighted by frequency and normalized.
+ *
+ * This powers semantic-ish search by matching keyword overlap
+ * between notes — not as smart as OpenAI embeddings but 100% free.
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class EmbeddingService {
 
-    private final WebClient openAiWebClient;
     private final NoteEmbeddingRepository embeddingRepository;
 
-    @Value("${openai.embedding-model:text-embedding-3-small}")
-    private String embeddingModel;
+    private static final int VECTOR_DIM = 512; // Fixed vector dimension
+    private static final Set<String> STOP_WORDS = Set.of(
+            "a", "an", "the", "and", "or", "but", "in", "on", "at", "to", "for",
+            "of", "with", "by", "from", "is", "are", "was", "were", "be", "been",
+            "being", "have", "has", "had", "do", "does", "did", "will", "would",
+            "could", "should", "may", "might", "shall", "can", "it", "its",
+            "this", "that", "these", "those", "i", "me", "my", "we", "our",
+            "you", "your", "he", "she", "him", "her", "his", "they", "them",
+            "their", "what", "which", "who", "when", "where", "why", "how",
+            "not", "no", "if", "then", "so", "as", "about", "up", "out",
+            "just", "also", "than", "more", "some", "any", "all", "each",
+            "every", "both", "few", "many", "much", "very", "too", "only",
+            "own", "same", "other", "such", "into", "over", "after", "before",
+            "between", "through", "during", "here", "there", "again", "once",
+            "p", "br", "div", "span", "nbsp", "amp", "lt", "gt" // HTML remnants
+    );
 
     /**
-     * Generate embedding vector for arbitrary text via OpenAI API.
-     * Returns a 1536-dimension float array.
+     * Generate a local embedding vector for text.
+     * Uses feature hashing — each word hashes to a bucket in a
+     * fixed-dimension vector, weighted by TF (term frequency).
      */
     public float[] generateEmbedding(String text) {
         if (text == null || text.isBlank()) {
-            throw new IllegalArgumentException("Cannot generate embedding for empty text");
+            return new float[VECTOR_DIM];
         }
 
-        // Truncate to ~8000 tokens (~32000 chars) to stay within model limits
-        String truncated = text.length() > 32000 ? text.substring(0, 32000) : text;
+        // Tokenize: lowercase, split on non-alphanumeric, filter stop words
+        String[] tokens = text.toLowerCase()
+                .replaceAll("[^a-z0-9\\s]", " ")
+                .split("\\s+");
 
-        try {
-            Map<String, Object> request = Map.of(
-                    "model", embeddingModel,
-                    "input", truncated);
+        float[] vector = new float[VECTOR_DIM];
+        int totalTokens = 0;
 
-            Map response = openAiWebClient.post()
-                    .uri("/embeddings")
-                    .bodyValue(request)
-                    .retrieve()
-                    .bodyToMono(Map.class)
-                    .block();
-
-            if (response == null || !response.containsKey("data")) {
-                throw new RuntimeException("Empty response from OpenAI embedding API");
+        for (String token : tokens) {
+            if (token.length() < 2 || token.length() > 30 || STOP_WORDS.contains(token)) {
+                continue;
             }
+            totalTokens++;
 
-            List<Map<String, Object>> data = (List<Map<String, Object>>) response.get("data");
-            List<Number> embedding = (List<Number>) data.get(0).get("embedding");
+            // Hash token to bucket index (deterministic)
+            int hash = Math.abs(token.hashCode());
+            int bucket = hash % VECTOR_DIM;
 
-            float[] vector = new float[embedding.size()];
-            for (int i = 0; i < embedding.size(); i++) {
-                vector[i] = embedding.get(i).floatValue();
+            // Use secondary hash for sign (reduces collision impact)
+            float sign = ((hash / VECTOR_DIM) % 2 == 0) ? 1.0f : -1.0f;
+            vector[bucket] += sign;
+
+            // Also hash bigrams (2-char prefix + length) for more signal
+            if (token.length() >= 3) {
+                String prefix = token.substring(0, 3);
+                int prefixHash = Math.abs(prefix.hashCode());
+                int prefixBucket = prefixHash % VECTOR_DIM;
+                vector[prefixBucket] += sign * 0.5f;
             }
-
-            log.debug("Generated {}-dim embedding for text ({} chars)", vector.length, text.length());
-            return vector;
-
-        } catch (Exception e) {
-            log.error("Failed to generate embedding: {}", e.getMessage());
-            throw new RuntimeException("Embedding generation failed", e);
         }
+
+        // Normalize to unit vector (for cosine similarity)
+        if (totalTokens > 0) {
+            float norm = 0;
+            for (float v : vector)
+                norm += v * v;
+            norm = (float) Math.sqrt(norm);
+            if (norm > 0) {
+                for (int i = 0; i < vector.length; i++) {
+                    vector[i] /= norm;
+                }
+            }
+        }
+
+        log.debug("Generated local {}-dim embedding ({} meaningful tokens)", VECTOR_DIM, totalTokens);
+        return vector;
     }
 
     /**
      * Embed a note asynchronously. Called after note create/update.
-     * Skips re-embedding if content hasn't changed.
      */
     @Async
     @Transactional
@@ -93,44 +125,36 @@ public class EmbeddingService {
      */
     @Transactional
     public void embedNote(Note note) {
-        // Build the text to embed: title + plain text content
         String plainContent = stripHtml(note.getContent());
-        String textToEmbed = note.getTitle() + "\n\n" + plainContent;
+        // Weight title more heavily by repeating it
+        String textToEmbed = note.getTitle() + " " + note.getTitle() + " " + note.getTitle() + "\n\n" + plainContent;
 
-        // Compute content hash to skip re-embedding if unchanged
         String contentHash = sha256(textToEmbed);
         if (embeddingRepository.existsByNoteIdAndContentHash(note.getId(), contentHash)) {
             log.debug("Skipping embedding for note {} — content unchanged", note.getId());
             return;
         }
 
-        // Generate the embedding
         float[] vector = generateEmbedding(textToEmbed);
 
-        // Store or update
         NoteEmbedding embedding = embeddingRepository.findByNoteId(note.getId())
                 .orElse(NoteEmbedding.builder().note(note).build());
 
         embedding.setVector(vector);
         embedding.setContentHash(contentHash);
-        embedding.setEmbeddingModel(embeddingModel);
+        embedding.setEmbeddingModel("local-feature-hash-v1");
+        embedding.setVectorDimension(VECTOR_DIM);
 
         embeddingRepository.save(embedding);
-        log.info("Embedded note {} ({} dimensions)", note.getId(), vector.length);
+        log.info("Embedded note {} ({} dims, local)", note.getId(), VECTOR_DIM);
     }
 
-    /**
-     * Strip HTML tags to get plain text for embedding.
-     */
     private String stripHtml(String html) {
         if (html == null)
             return "";
         return Jsoup.parse(html).text();
     }
 
-    /**
-     * SHA-256 hash of content for change detection.
-     */
     private String sha256(String text) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
@@ -142,13 +166,12 @@ public class EmbeddingService {
     }
 
     /**
-     * Compute cosine similarity between two vectors.
+     * Cosine similarity between two vectors.
      */
     public static double cosineSimilarity(float[] a, float[] b) {
-        if (a.length != b.length)
-            return 0;
+        int len = Math.min(a.length, b.length);
         double dotProduct = 0, normA = 0, normB = 0;
-        for (int i = 0; i < a.length; i++) {
+        for (int i = 0; i < len; i++) {
             dotProduct += a[i] * b[i];
             normA += a[i] * a[i];
             normB += b[i] * b[i];

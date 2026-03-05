@@ -57,7 +57,7 @@ public class SemanticSearchService {
                                     .collect(Collectors.toList()))
                             .build();
                 })
-                .filter(r -> r.getSimilarity() > 0.3) // Filter out low-relevance results
+                .filter(r -> r.getSimilarity() > 0.05) // Lower threshold for local keyword embeddings
                 .sorted(Comparator.comparingDouble(SemanticSearchResult::getSimilarity).reversed())
                 .limit(topK)
                 .collect(Collectors.toList());
