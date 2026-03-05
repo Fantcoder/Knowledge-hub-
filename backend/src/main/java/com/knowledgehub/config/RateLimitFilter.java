@@ -34,6 +34,12 @@ public class RateLimitFilter implements Filter {
         HttpServletRequest req = (HttpServletRequest) request;
         HttpServletResponse res = (HttpServletResponse) response;
 
+        // Skip rate limiting for CORS preflight OPTIONS requests
+        if ("OPTIONS".equalsIgnoreCase(req.getMethod())) {
+            chain.doFilter(request, response);
+            return;
+        }
+
         String ip = getClientIP(req);
         String path = req.getRequestURI();
 
