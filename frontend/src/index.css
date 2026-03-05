@@ -227,62 +227,8 @@
 }
 
 /* ═══════════════════════════════════════════════════════
-   REACT QUILL OVERRIDES
+   (React Quill styles removed — now using Tiptap editor)
    ═══════════════════════════════════════════════════════ */
-.ql-toolbar.ql-snow {
-  border: none !important;
-  border-bottom: 1px solid var(--border) !important;
-  padding: 8px 12px !important;
-  background: var(--surface-2);
-  border-radius: 12px 12px 0 0;
-}
-
-.ql-container.ql-snow {
-  border: none !important;
-  font-family: 'DM Sans', system-ui, sans-serif;
-  font-size: 15px;
-  color: var(--ink);
-}
-
-.ql-editor {
-  min-height: 320px;
-  padding: 20px 24px !important;
-  line-height: 1.75;
-  background: var(--surface-1);
-  border-radius: 0 0 12px 12px;
-}
-
-.ql-editor.ql-blank::before {
-  color: var(--ink-ghost) !important;
-  font-style: normal !important;
-}
-
-.ql-snow .ql-stroke {
-  stroke: var(--ink-faint) !important;
-}
-
-.ql-snow .ql-fill {
-  fill: var(--ink-faint) !important;
-}
-
-.ql-snow .ql-picker-label {
-  color: var(--ink-faint) !important;
-}
-
-.ql-snow .ql-active .ql-stroke {
-  stroke: var(--accent) !important;
-}
-
-.ql-snow .ql-active .ql-fill {
-  fill: var(--accent) !important;
-}
-
-.ql-snow .ql-picker-options {
-  background: var(--surface-1) !important;
-  border-color: var(--border) !important;
-  border-radius: 12px !important;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08) !important;
-}
 
 /* ═══════════════════════════════════════════════════════
    PROSE OVERRIDES — Note content rendering

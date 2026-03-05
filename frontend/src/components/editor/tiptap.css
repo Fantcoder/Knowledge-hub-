@@ -1,0 +1,133 @@
+/* ── Tiptap Editor Styles ─────────────────────────────────── */
+
+.tiptap-wrapper {
+    @apply bg-surface-1 border border-border rounded-2xl overflow-hidden;
+}
+
+/* Core editor */
+.tiptap {
+    @apply outline-none;
+}
+
+/* Placeholder */
+.tiptap p.is-editor-empty:first-child::before {
+    content: attr(data-placeholder);
+    @apply text-ink-ghost pointer-events-none float-left h-0;
+}
+
+/* Headings */
+.tiptap h1 {
+    @apply text-2xl font-serif font-bold text-ink mt-6 mb-3;
+}
+
+.tiptap h2 {
+    @apply text-xl font-serif font-bold text-ink mt-5 mb-2;
+}
+
+.tiptap h3 {
+    @apply text-lg font-semibold text-ink mt-4 mb-2;
+}
+
+/* Paragraphs & spacing */
+.tiptap p {
+    @apply my-2 leading-relaxed text-ink;
+}
+
+/* Links */
+.tiptap a {
+    @apply text-accent underline cursor-pointer;
+    text-decoration-color: var(--accent);
+    text-underline-offset: 3px;
+}
+
+/* Lists */
+.tiptap ul {
+    @apply list-disc pl-6 my-2;
+}
+
+.tiptap ol {
+    @apply list-decimal pl-6 my-2;
+}
+
+.tiptap li {
+    @apply my-0.5;
+}
+
+.tiptap li p {
+    @apply my-0;
+}
+
+/* Task lists */
+.tiptap ul[data-type="taskList"] {
+    @apply list-none p-0;
+}
+
+.tiptap ul[data-type="taskList"] li {
+    @apply flex items-start gap-2 my-1;
+}
+
+.tiptap ul[data-type="taskList"] li label {
+    @apply mt-0.5;
+}
+
+.tiptap ul[data-type="taskList"] li label input[type="checkbox"] {
+    @apply w-4 h-4 rounded border-border accent-accent cursor-pointer;
+}
+
+.tiptap ul[data-type="taskList"] li div {
+    @apply flex-1;
+}
+
+/* Blockquote */
+.tiptap blockquote {
+    @apply border-l-4 border-accent pl-4 my-4 text-ink-muted italic;
+    border-left-color: var(--accent);
+    opacity: 0.9;
+}
+
+/* Code inline */
+.tiptap code {
+    @apply bg-surface-2 text-accent rounded px-1.5 py-0.5 font-mono text-sm;
+}
+
+/* Code blocks */
+.tiptap pre {
+    @apply bg-surface-2 rounded-xl p-4 my-4 overflow-x-auto;
+}
+
+.tiptap pre code {
+    @apply bg-transparent p-0 text-ink text-sm leading-relaxed;
+}
+
+/* Horizontal rule */
+.tiptap hr {
+    @apply border-border my-6;
+}
+
+/* Highlight */
+.tiptap mark {
+    @apply bg-accent-soft text-ink rounded px-0.5;
+}
+
+/* Bold, italic, etc */
+.tiptap strong {
+    @apply font-bold;
+}
+
+.tiptap em {
+    @apply italic;
+}
+
+.tiptap s {
+    @apply line-through text-ink-muted;
+}
+
+/* Images */
+.tiptap img {
+    @apply rounded-xl max-w-full my-4;
+}
+
+/* Selection highlight */
+.tiptap ::selection {
+    background: var(--accent-soft);
+}

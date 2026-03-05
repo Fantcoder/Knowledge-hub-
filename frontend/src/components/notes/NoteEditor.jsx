@@ -1,16 +1,7 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
-import ReactQuill from 'react-quill'
-import 'react-quill/dist/quill.snow.css'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import TiptapEditor from '../editor/TiptapEditor'
+import '../editor/tiptap.css'
 import { tagService } from '../../services/tagService'
-
-const TOOLBAR = [
-    [{ header: [1, 2, 3, false] }],
-    ['bold', 'italic', 'underline', 'strike'],
-    [{ list: 'ordered' }, { list: 'bullet' }],
-    ['blockquote', 'code-block'],
-    ['link'],
-    ['clean'],
-]
 
 export default function NoteEditor({ initialData, onSave, onCancel, isSaving }) {
     const [title, setTitle] = useState(initialData?.title || '')
@@ -20,13 +11,10 @@ export default function NoteEditor({ initialData, onSave, onCancel, isSaving }) 
     const [allTags, setAllTags] = useState([])
     const [showSuggestions, setShowSuggestions] = useState(false)
     const tagRef = useRef(null)
-    const quillRef = useRef(null)
 
     useEffect(() => {
         tagService.getAll().then((r) => setAllTags(r.data.data || [])).catch(() => { })
     }, [])
-
-    const modules = useMemo(() => ({ toolbar: TOOLBAR }), [])
 
     const suggestions = tagInput.trim()
         ? allTags.filter((t) =>
@@ -114,17 +102,12 @@ export default function NoteEditor({ initialData, onSave, onCancel, isSaving }) 
             {/* Divider */}
             <div className="border-t border-border" />
 
-            {/* Editor */}
-            <div className="card overflow-hidden">
-                <ReactQuill
-                    ref={quillRef}
-                    value={content}
-                    onChange={setContent}
-                    modules={modules}
-                    theme="snow"
-                    placeholder="Start writing…"
-                />
-            </div>
+            {/* Tiptap Editor */}
+            <TiptapEditor
+                content={content}
+                onChange={setContent}
+                placeholder="Start writing… (use Markdown shortcuts: # heading, **bold**, *italic*)"
+            />
 
             {/* Actions */}
             <div className="flex items-center justify-between pt-2">
