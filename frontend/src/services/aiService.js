@@ -1,9 +1,9 @@
 import api from './api'
 
 export const aiService = {
-    // Chat with your notes (RAG)
+    // Chat with your notes (RAG) — long timeout needed for retry backoff
     chat: (question, contextNoteIds = []) =>
-        api.post('/ai/chat', { question, contextNoteIds }),
+        api.post('/ai/chat', { question, contextNoteIds }, { timeout: 120000 }),
 
     // Semantic search
     semanticSearch: (query, limit = 10) =>

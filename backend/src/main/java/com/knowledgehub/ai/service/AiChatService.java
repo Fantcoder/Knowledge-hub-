@@ -7,9 +7,12 @@ import com.knowledgehub.entity.User;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -22,8 +25,11 @@ public class AiChatService {
         private final WebClient aiWebClient;
         private final SemanticSearchService semanticSearchService;
 
-        @Value("${ai.chat-model:google/gemma-3-12b-it:free}")
+        @Value("${ai.chat-model:meta-llama/llama-3.2-3b-instruct:free}")
         private String chatModel;
+
+        private static final int MAX_RETRIES = 4;
+        private static final long INITIAL_BACKOFF_MS = 3000; // 3 seconds
 
         private static final String SYSTEM_PROMPT = """
                         You are KnowledgeHub AI — a helpful, intelligent assistant that answers questions
@@ -40,33 +46,21 @@ public class AiChatService {
                         USER'S RELEVANT NOTES:
                         """;
 
-        /**
-         * Chat with your notes using RAG (Retrieval Augmented Generation).
-         *
-         * Flow:
-         * 1. Find relevant notes via local keyword search
-         * 2. Build context from those notes
-         * 3. Send to Llama 3 via OpenRouter
-         * 4. Return answer + source references
-         */
         public ChatResponse chat(User user, ChatRequest request) {
                 log.info("AI chat for user {}: '{}'", user.getUsername(), request.getQuestion());
 
-                // Step 1: Find relevant notes via semantic search
                 List<SemanticSearchResult> relevantNotes = semanticSearchService.search(
                                 user, request.getQuestion(), 5);
 
                 if (relevantNotes.isEmpty()) {
                         return ChatResponse.builder()
                                         .answer("I don't have enough context from your notes to answer this question. "
-                                                        +
-                                                        "Try saving some notes first, and I'll be able to help you find and connect ideas!")
+                                                        + "Try saving some notes first, and I'll be able to help you find and connect ideas!")
                                         .sourceNotes(List.of())
                                         .model(chatModel)
                                         .build();
                 }
 
-                // Step 2: Build context from relevant notes
                 String context = relevantNotes.stream()
                                 .map(n -> String.format("--- Note: \"%s\" (relevance: %.0f%%) ---\n%s",
                                                 n.getTitle(),
@@ -76,10 +70,8 @@ public class AiChatService {
 
                 String fullSystemPrompt = SYSTEM_PROMPT + "\n" + context;
 
-                // Step 3: Call Llama 3 via OpenRouter
-                String answer = callChatApi(fullSystemPrompt, request.getQuestion());
+                String answer = callChatApiWithRetry(fullSystemPrompt, request.getQuestion());
 
-                // Step 4: Build response with source references
                 List<ChatResponse.SourceNote> sources = relevantNotes.stream()
                                 .map(n -> ChatResponse.SourceNote.builder()
                                                 .noteId(n.getNoteId())
@@ -95,52 +87,136 @@ public class AiChatService {
                                 .build();
         }
 
-        private String callChatApi(String systemPrompt, String userMessage) {
-                List<String> modelsToTry = List.of(
+        /**
+         * Calls the OpenRouter API with exponential backoff retry.
+         * OpenRouter rate-limits per API key (not per model), so the ONLY
+         * solution is to WAIT and retry the same request after the cooldown.
+         * Backoff: 3s -> 6s -> 12s -> 24s
+         */
+        private String callChatApiWithRetry(String systemPrompt, String userMessage) {
+                // Models to try in order — only switch model on 400/404 (model broken)
+                List<String> models = List.of(
                                 chatModel,
-                                "meta-llama/llama-3.2-3b-instruct:free",
-                                "meta-llama/llama-3.3-70b-instruct:free",
-                                "mistralai/mistral-small-3.1-24b-instruct:free",
-                                "google/gemma-3-27b-it:free");
+                                "google/gemma-3-4b-it:free",
+                                "meta-llama/llama-3.2-3b-instruct:free");
 
-                Exception lastException = null;
-
-                for (String model : modelsToTry) {
-                        try {
-                                Map<String, Object> request = Map.of(
-                                                "model", model,
-                                                "messages", List.of(
-                                                                Map.of("role", "system", "content", systemPrompt),
-                                                                Map.of("role", "user", "content", userMessage)),
-                                                "temperature", 0.3,
-                                                "max_tokens", 1000);
-
-                                Map response = aiWebClient.post()
-                                                .uri("/chat/completions")
-                                                .bodyValue(request)
-                                                .retrieve()
-                                                .bodyToMono(Map.class)
-                                                .block();
-
-                                if (response != null && response.containsKey("choices")) {
-                                        List<Map<String, Object>> choices = (List<Map<String, Object>>) response
-                                                        .get("choices");
-                                        Map<String, Object> message = (Map<String, Object>) choices.get(0)
-                                                        .get("message");
-                                        return (String) message.get("content");
-                                }
-                        } catch (Exception e) {
-                                log.warn("API call failed for model {}: {}", model, e.getMessage());
-                                lastException = e;
+                for (String model : models) {
+                        String result = callWithBackoff(model, systemPrompt, userMessage);
+                        if (result != null) {
+                                return result;
                         }
                 }
 
-                log.error("All Chat API calls failed. Last error: {}",
-                                lastException != null ? lastException.getMessage() : "Unknown");
-                if (lastException != null && lastException.getMessage() != null
-                                && lastException.getMessage().contains("429")) {
-                        return "AI provider is currently busy (Too Many Requests). Please wait a few seconds and try again.";
+                return "I'm sorry, the AI service is temporarily overloaded. Please wait about 30 seconds and try again. "
+                                + "This happens because we use a free AI tier with rate limits.";
+        }
+
+        /**
+         * Try a single model with exponential backoff on 429 errors.
+         * Returns null only if the model itself is broken (400/404) — move to next
+         * model.
+         * Returns the answer string on success.
+         */
+        @SuppressWarnings("unchecked")
+        private String callWithBackoff(String model, String systemPrompt, String userMessage) {
+                Map<String, Object> requestBody = Map.of(
+                                "model", model,
+                                "messages", List.of(
+                                                Map.of("role", "system", "content", systemPrompt),
+                                                Map.of("role", "user", "content", userMessage)),
+                                "temperature", 0.3,
+                                "max_tokens", 1000);
+
+                for (int attempt = 0; attempt < MAX_RETRIES; attempt++) {
+                        try {
+                                // Use exchangeToMono for manual status code handling (no auto-throw on 4xx)
+                                Map<String, Object> response = aiWebClient.post()
+                                                .uri("/chat/completions")
+                                                .bodyValue(requestBody)
+                                                .exchangeToMono(clientResponse -> {
+                                                        HttpStatusCode status = clientResponse.statusCode();
+
+                                                        if (status.is2xxSuccessful()) {
+                                                                return clientResponse.bodyToMono(Map.class);
+                                                        }
+
+                                                        return clientResponse.bodyToMono(String.class)
+                                                                        .defaultIfEmpty("")
+                                                                        .flatMap(body -> {
+                                                                                int code = status.value();
+                                                                                log.warn("API returned {} for model {}: {}",
+                                                                                                code, model,
+                                                                                                body.length() > 200
+                                                                                                                ? body.substring(
+                                                                                                                                0,
+                                                                                                                                200)
+                                                                                                                : body);
+                                                                                if (code == 429) {
+                                                                                        return Mono.just(Map.of(
+                                                                                                        "__error_type",
+                                                                                                        "rate_limited"));
+                                                                                } else if (code == 400 || code == 404) {
+                                                                                        return Mono.just(Map.of(
+                                                                                                        "__error_type",
+                                                                                                        "model_error"));
+                                                                                } else {
+                                                                                        return Mono.just(Map.of(
+                                                                                                        "__error_type",
+                                                                                                        "unknown"));
+                                                                                }
+                                                                        });
+                                                })
+                                                .block(Duration.ofSeconds(30));
+
+                                if (response == null) {
+                                        log.warn("Null response from API for model {}", model);
+                                        return null;
+                                }
+
+                                // Handle error responses
+                                Object errorType = response.get("__error_type");
+                                if (errorType != null) {
+                                        if ("rate_limited".equals(errorType)) {
+                                                long waitMs = INITIAL_BACKOFF_MS * (long) Math.pow(2, attempt);
+                                                log.info("Rate limited on {} (attempt {}/{}). Waiting {}ms...",
+                                                                model, attempt + 1, MAX_RETRIES, waitMs);
+                                                Thread.sleep(waitMs);
+                                                continue; // RETRY same model after waiting
+                                        } else if ("model_error".equals(errorType)) {
+                                                log.warn("Model {} is broken (400/404). Trying next model.", model);
+                                                return null; // try next model
+                                        } else {
+                                                return null; // try next model
+                                        }
+                                }
+
+                                // SUCCESS — extract the answer
+                                Object choicesObj = response.get("choices");
+                                if (choicesObj instanceof List<?> choicesList && !choicesList.isEmpty()) {
+                                        Map<String, Object> firstChoice = (Map<String, Object>) choicesList.get(0);
+                                        Map<String, Object> message = (Map<String, Object>) firstChoice.get("message");
+                                        if (message != null && message.get("content") != null) {
+                                                String content = (String) message.get("content");
+                                                log.info("AI response received from model {} on attempt {}", model,
+                                                                attempt + 1);
+                                                return content;
+                                        }
+                                }
+
+                                log.warn("Unexpected response structure from model {}: {}", model, response.keySet());
+                                return null;
+
+                        } catch (InterruptedException ie) {
+                                Thread.currentThread().interrupt();
+                                log.error("Thread interrupted during backoff wait");
+                                return "AI request was interrupted. Please try again.";
+                        } catch (Exception e) {
+                                log.error("Exception calling model {}: {}", model, e.getMessage());
+                                return null;
+                        }
                 }
-                return "Sorry, I encountered an error while connecting to the AI brain. Please try again.";
+
+                log.warn("All {} retries exhausted for model {} (rate limited)", MAX_RETRIES, model);
+                return null;
         }
 }
