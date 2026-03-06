@@ -43,7 +43,7 @@ public class SemanticSearchService {
         }
 
         // 3. Compute similarity for each, sort, and take top K
-        return allEmbeddings.stream()
+        List<SemanticSearchResult> results = allEmbeddings.stream()
                 .map(ne -> {
                     double similarity = EmbeddingService.cosineSimilarity(queryVector, ne.getVector());
                     return SemanticSearchResult.builder()
@@ -57,10 +57,34 @@ public class SemanticSearchService {
                                     .collect(Collectors.toList()))
                             .build();
                 })
-                .filter(r -> r.getSimilarity() > 0.05) // Lower threshold for local keyword embeddings
+                .filter(r -> r.getSimilarity() > 0.0) // Lower threshold to allow any overlap
                 .sorted(Comparator.comparingDouble(SemanticSearchResult::getSimilarity).reversed())
                 .limit(topK)
                 .collect(Collectors.toList());
+
+        // 4. Fallback: If no notes matched the search keywords (e.g., general
+        // question),
+        // return the user's most recently updated notes as context so the AI can still
+        // operate!
+        if (results.isEmpty() && !allEmbeddings.isEmpty()) {
+            log.info("No strict semantic overlap. Falling back to most recent notes for context.");
+            return allEmbeddings.stream()
+                    .sorted((a, b) -> b.getNote().getUpdatedAt().compareTo(a.getNote().getUpdatedAt()))
+                    .limit(topK)
+                    .map(ne -> SemanticSearchResult.builder()
+                            .noteId(ne.getNote().getId())
+                            .title(ne.getNote().getTitle())
+                            .contentPreview(generatePreview(ne.getNote().getContent()))
+                            .similarity(0.01) // Small non-zero score for fallback
+                            .tags(ne.getNote().getTags().stream()
+                                    .map(t -> t.getName())
+                                    .sorted()
+                                    .collect(Collectors.toList()))
+                            .build())
+                    .collect(Collectors.toList());
+        }
+
+        return results;
     }
 
     private String generatePreview(String htmlContent) {

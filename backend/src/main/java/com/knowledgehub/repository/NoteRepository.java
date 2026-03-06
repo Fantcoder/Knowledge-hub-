@@ -4,6 +4,7 @@ import com.knowledgehub.entity.Note;
 import com.knowledgehub.entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -17,28 +18,35 @@ public interface NoteRepository extends JpaRepository<Note, Long> {
 
        // ── Paginated queries (used by controllers) ──────────────────────────
 
+       @EntityGraph(attributePaths = { "tags" })
        Page<Note> findByUserAndIsDeletedFalseAndIsArchivedFalseOrderByIsPinnedDescUpdatedAtDesc(
                      User user, Pageable pageable);
 
+       @EntityGraph(attributePaths = { "tags" })
        Page<Note> findByUserAndIsDeletedFalseAndIsArchivedTrueOrderByUpdatedAtDesc(
                      User user, Pageable pageable);
 
+       @EntityGraph(attributePaths = { "tags" })
        Page<Note> findByUserAndIsDeletedTrueOrderByUpdatedAtDesc(
                      User user, Pageable pageable);
 
+       @EntityGraph(attributePaths = { "tags" })
        Page<Note> findByUserAndIsPinnedTrueAndIsDeletedFalseOrderByUpdatedAtDesc(
                      User user, Pageable pageable);
 
+       @EntityGraph(attributePaths = { "tags" })
        @Query("SELECT DISTINCT n FROM Note n WHERE n.user = :user AND n.isDeleted = false " +
                      "AND (n.title LIKE :pattern OR n.content LIKE :pattern) ORDER BY n.updatedAt DESC")
        Page<Note> searchByQuery(@Param("user") User user, @Param("pattern") String pattern,
                      Pageable pageable);
 
+       @EntityGraph(attributePaths = { "tags" })
        @Query("SELECT DISTINCT n FROM Note n JOIN n.tags t WHERE n.user = :user " +
                      "AND n.isDeleted = false AND t.name = :tagName ORDER BY n.updatedAt DESC")
        Page<Note> findByUserAndTagName(@Param("user") User user, @Param("tagName") String tagName,
                      Pageable pageable);
 
+       @EntityGraph(attributePaths = { "tags" })
        @Query("SELECT DISTINCT n FROM Note n JOIN n.tags t WHERE n.user = :user AND n.isDeleted = false " +
                      "AND (n.title LIKE :pattern OR n.content LIKE :pattern) " +
                      "AND t.name = :tagName ORDER BY n.updatedAt DESC")
@@ -70,5 +78,6 @@ public interface NoteRepository extends JpaRepository<Note, Long> {
 
        // ── Single-item lookups ──────────────────────────────────────────────
 
+       @EntityGraph(attributePaths = { "tags" })
        Optional<Note> findByIdAndUser(Long id, User user);
 }
