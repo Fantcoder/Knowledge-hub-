@@ -1,19 +1,24 @@
+import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { formatRelative } from '../../utils/formatDate'
 import { stripHtml, truncate } from '../../utils/sanitize'
-import { useNotes } from '../../context/NotesContext'
 
-export default function NoteCard({ note, viewMode = 'grid' }) {
+const NoteCard = React.memo(function NoteCard({
+    note,
+    viewMode = 'grid',
+    onTogglePin,
+    onToggleArchive,
+    onDelete
+}) {
     const navigate = useNavigate()
-    const { togglePin, deleteNote, toggleArchive } = useNotes()
-    const preview = truncate(stripHtml(note.content || ''), 140)
+    const preview = truncate(stripHtml(note.contentPreview || note.content || ''), 140)
     const isGrid = viewMode === 'grid'
 
     return (
         <article
             id={`note-${note.id}`}
             onClick={() => navigate(`/notes/${note.id}`)}
-            className={`group card cursor-pointer ${isGrid ? 'p-5' : 'p-4 flex items-start gap-4'}`}
+            className={`group card cursor-pointer h-full ${isGrid ? 'p-5' : 'p-4 flex items-start gap-4'}`}
         >
             <div className={isGrid ? '' : 'flex-1 min-w-0'}>
                 {/* Title */}
@@ -47,11 +52,11 @@ export default function NoteCard({ note, viewMode = 'grid' }) {
 
             {/* Hover actions — subtle row */}
             <div className={`${isGrid ? 'mt-3 pt-3 border-t border-border' : ''} flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200`}>
-                <button onClick={(e) => { e.stopPropagation(); togglePin(note.id) }}
+                <button onClick={(e) => { e.stopPropagation(); onTogglePin(note.id) }}
                     className="btn-ghost text-xs py-1 px-2" title={note.isPinned ? 'Unpin' : 'Pin'}>
                     {note.isPinned ? 'Unpin' : 'Pin'}
                 </button>
-                <button onClick={(e) => { e.stopPropagation(); toggleArchive(note.id) }}
+                <button onClick={(e) => { e.stopPropagation(); onToggleArchive(note.id) }}
                     className="btn-ghost text-xs py-1 px-2">
                     Archive
                 </button>
@@ -59,11 +64,17 @@ export default function NoteCard({ note, viewMode = 'grid' }) {
                     className="btn-ghost text-xs py-1 px-2">
                     Edit
                 </button>
-                <button onClick={(e) => { e.stopPropagation(); deleteNote(note.id) }}
+                <button onClick={(e) => { e.stopPropagation(); onDelete(note.id) }}
                     className="btn-ghost text-xs py-1 px-2 text-danger hover:bg-danger-soft">
                     Delete
                 </button>
             </div>
         </article>
     )
-}
+}, (prevProps, nextProps) => {
+    return prevProps.note.id === nextProps.note.id &&
+        prevProps.note.updatedAt === nextProps.note.updatedAt &&
+        prevProps.viewMode === nextProps.viewMode
+})
+
+export default NoteCard
