@@ -98,9 +98,10 @@ public class AiChatService {
         private String callChatApi(String systemPrompt, String userMessage) {
                 List<String> modelsToTry = List.of(
                                 chatModel,
-                                "google/gemini-2.0-flash-lite-preview-02-05:free",
-                                "meta-llama/llama-3-8b-instruct:free",
-                                "mistralai/mistral-7b-instruct:free");
+                                "meta-llama/llama-3.2-3b-instruct:free",
+                                "meta-llama/llama-3.3-70b-instruct:free",
+                                "mistralai/mistral-small-3.1-24b-instruct:free",
+                                "google/gemma-3-27b-it:free");
 
                 Exception lastException = null;
 
