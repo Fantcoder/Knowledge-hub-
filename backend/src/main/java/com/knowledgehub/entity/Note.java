@@ -31,6 +31,9 @@ public class Note {
     @Column(columnDefinition = "LONGTEXT")
     private String content;
 
+    @Column(name = "content_preview", length = 500)
+    private String contentPreview;
+
     @Column(name = "is_pinned")
     @Builder.Default
     private Boolean isPinned = false;
@@ -56,11 +59,7 @@ public class Note {
     private User user;
 
     @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-        name = "note_tags",
-        joinColumns = @JoinColumn(name = "note_id"),
-        inverseJoinColumns = @JoinColumn(name = "tag_id")
-    )
+    @JoinTable(name = "note_tags", joinColumns = @JoinColumn(name = "note_id"), inverseJoinColumns = @JoinColumn(name = "tag_id"))
     @Builder.Default
     private Set<Tag> tags = new HashSet<>();
 

@@ -46,10 +46,13 @@ public class SemanticSearchService {
         List<SemanticSearchResult> results = allEmbeddings.stream()
                 .map(ne -> {
                     double similarity = EmbeddingService.cosineSimilarity(queryVector, ne.getVector());
+                    String preview = ne.getNote().getContentPreview() != null
+                            ? ne.getNote().getContentPreview()
+                            : generatePreview(ne.getNote().getContent());
                     return SemanticSearchResult.builder()
                             .noteId(ne.getNote().getId())
                             .title(ne.getNote().getTitle())
-                            .contentPreview(generatePreview(ne.getNote().getContent()))
+                            .contentPreview(preview)
                             .similarity(similarity)
                             .tags(ne.getNote().getTags().stream()
                                     .map(t -> t.getName())
@@ -71,16 +74,21 @@ public class SemanticSearchService {
             return allEmbeddings.stream()
                     .sorted((a, b) -> b.getNote().getUpdatedAt().compareTo(a.getNote().getUpdatedAt()))
                     .limit(topK)
-                    .map(ne -> SemanticSearchResult.builder()
-                            .noteId(ne.getNote().getId())
-                            .title(ne.getNote().getTitle())
-                            .contentPreview(generatePreview(ne.getNote().getContent()))
-                            .similarity(0.01) // Small non-zero score for fallback
-                            .tags(ne.getNote().getTags().stream()
-                                    .map(t -> t.getName())
-                                    .sorted()
-                                    .collect(Collectors.toList()))
-                            .build())
+                    .map(ne -> {
+                        String preview = ne.getNote().getContentPreview() != null
+                                ? ne.getNote().getContentPreview()
+                                : generatePreview(ne.getNote().getContent());
+                        return SemanticSearchResult.builder()
+                                .noteId(ne.getNote().getId())
+                                .title(ne.getNote().getTitle())
+                                .contentPreview(preview)
+                                .similarity(0.01) // Small non-zero score for fallback
+                                .tags(ne.getNote().getTags().stream()
+                                        .map(t -> t.getName())
+                                        .sorted()
+                                        .collect(Collectors.toList()))
+                                .build();
+                    })
                     .collect(Collectors.toList());
         }
 

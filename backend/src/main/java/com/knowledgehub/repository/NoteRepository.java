@@ -18,35 +18,35 @@ public interface NoteRepository extends JpaRepository<Note, Long> {
 
        // ── Paginated queries (used by controllers) ──────────────────────────
 
-       @EntityGraph(attributePaths = { "tags" })
+       @EntityGraph(attributePaths = { "tags", "files" })
        Page<Note> findByUserAndIsDeletedFalseAndIsArchivedFalseOrderByIsPinnedDescUpdatedAtDesc(
                      User user, Pageable pageable);
 
-       @EntityGraph(attributePaths = { "tags" })
+       @EntityGraph(attributePaths = { "tags", "files" })
        Page<Note> findByUserAndIsDeletedFalseAndIsArchivedTrueOrderByUpdatedAtDesc(
                      User user, Pageable pageable);
 
-       @EntityGraph(attributePaths = { "tags" })
+       @EntityGraph(attributePaths = { "tags", "files" })
        Page<Note> findByUserAndIsDeletedTrueOrderByUpdatedAtDesc(
                      User user, Pageable pageable);
 
-       @EntityGraph(attributePaths = { "tags" })
+       @EntityGraph(attributePaths = { "tags", "files" })
        Page<Note> findByUserAndIsPinnedTrueAndIsDeletedFalseOrderByUpdatedAtDesc(
                      User user, Pageable pageable);
 
-       @EntityGraph(attributePaths = { "tags" })
+       @EntityGraph(attributePaths = { "tags", "files" })
        @Query("SELECT DISTINCT n FROM Note n WHERE n.user = :user AND n.isDeleted = false " +
                      "AND (n.title LIKE :pattern OR n.content LIKE :pattern) ORDER BY n.updatedAt DESC")
        Page<Note> searchByQuery(@Param("user") User user, @Param("pattern") String pattern,
                      Pageable pageable);
 
-       @EntityGraph(attributePaths = { "tags" })
+       @EntityGraph(attributePaths = { "tags", "files" })
        @Query("SELECT DISTINCT n FROM Note n JOIN n.tags t WHERE n.user = :user " +
                      "AND n.isDeleted = false AND t.name = :tagName ORDER BY n.updatedAt DESC")
        Page<Note> findByUserAndTagName(@Param("user") User user, @Param("tagName") String tagName,
                      Pageable pageable);
 
-       @EntityGraph(attributePaths = { "tags" })
+       @EntityGraph(attributePaths = { "tags", "files" })
        @Query("SELECT DISTINCT n FROM Note n JOIN n.tags t WHERE n.user = :user AND n.isDeleted = false " +
                      "AND (n.title LIKE :pattern OR n.content LIKE :pattern) " +
                      "AND t.name = :tagName ORDER BY n.updatedAt DESC")

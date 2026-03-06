@@ -64,6 +64,7 @@ public class NoteService {
         Note note = Note.builder()
                 .title(request.getTitle())
                 .content(sanitizeContent(request.getContent()))
+                .contentPreview(generatePreview(request.getContent()))
                 .isPinned(request.getIsPinned() != null && request.getIsPinned())
                 .isArchived(request.getIsArchived() != null && request.getIsArchived())
                 .user(user)
@@ -89,22 +90,22 @@ public class NoteService {
 
         if (tagName != null && !tagName.isBlank()) {
             return noteRepository.findByUserAndTagName(user, tagName, pageable)
-                    .map(this::toResponse);
+                    .map(this::toListResponse);
         }
 
         return switch (filter != null ? filter : "active") {
             case "archived" -> noteRepository
                     .findByUserAndIsDeletedFalseAndIsArchivedTrueOrderByUpdatedAtDesc(user, pageable)
-                    .map(this::toResponse);
+                    .map(this::toListResponse);
             case "deleted" -> noteRepository
                     .findByUserAndIsDeletedTrueOrderByUpdatedAtDesc(user, pageable)
-                    .map(this::toResponse);
+                    .map(this::toListResponse);
             case "pinned" -> noteRepository
                     .findByUserAndIsPinnedTrueAndIsDeletedFalseOrderByUpdatedAtDesc(user, pageable)
-                    .map(this::toResponse);
+                    .map(this::toListResponse);
             default -> noteRepository
                     .findByUserAndIsDeletedFalseAndIsArchivedFalseOrderByIsPinnedDescUpdatedAtDesc(user, pageable)
-                    .map(this::toResponse);
+                    .map(this::toListResponse);
         };
     }
 
@@ -118,15 +119,15 @@ public class NoteService {
         String tag = tagName != null && !tagName.isBlank() ? tagName.trim().toLowerCase() : null;
 
         if (pattern != null && tag != null) {
-            return noteRepository.searchByQueryAndTag(user, pattern, tag, pageable).map(this::toResponse);
+            return noteRepository.searchByQueryAndTag(user, pattern, tag, pageable).map(this::toListResponse);
         } else if (pattern != null) {
-            return noteRepository.searchByQuery(user, pattern, pageable).map(this::toResponse);
+            return noteRepository.searchByQuery(user, pattern, pageable).map(this::toListResponse);
         } else if (tag != null) {
-            return noteRepository.findByUserAndTagName(user, tag, pageable).map(this::toResponse);
+            return noteRepository.findByUserAndTagName(user, tag, pageable).map(this::toListResponse);
         } else {
             return noteRepository
                     .findByUserAndIsDeletedFalseAndIsArchivedFalseOrderByIsPinnedDescUpdatedAtDesc(user, pageable)
-                    .map(this::toResponse);
+                    .map(this::toListResponse);
         }
     }
 
@@ -170,6 +171,7 @@ public class NoteService {
 
         note.setTitle(request.getTitle());
         note.setContent(sanitizeContent(request.getContent()));
+        note.setContentPreview(generatePreview(request.getContent()));
 
         if (request.getIsPinned() != null)
             note.setIsPinned(request.getIsPinned());
@@ -257,6 +259,14 @@ public class NoteService {
     }
 
     private NoteResponse toResponse(Note note) {
+        return buildResponse(note, true);
+    }
+
+    private NoteResponse toListResponse(Note note) {
+        return buildResponse(note, false);
+    }
+
+    private NoteResponse buildResponse(Note note, boolean includeContent) {
         List<FileResponse> fileResponses = note.getFiles().stream()
                 .map(f -> FileResponse.builder()
                         .id(f.getId())
@@ -272,8 +282,9 @@ public class NoteService {
         return NoteResponse.builder()
                 .id(note.getId())
                 .title(note.getTitle())
-                .content(note.getContent())
-                .contentPreview(generatePreview(note.getContent()))
+                .content(includeContent ? note.getContent() : null)
+                .contentPreview(note.getContentPreview() != null ? note.getContentPreview()
+                        : generatePreview(note.getContent()))
                 .isPinned(note.getIsPinned())
                 .isArchived(note.getIsArchived())
                 .isDeleted(note.getIsDeleted())
