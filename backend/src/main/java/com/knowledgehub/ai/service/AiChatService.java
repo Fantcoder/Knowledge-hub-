@@ -22,7 +22,7 @@ public class AiChatService {
         private final WebClient aiWebClient;
         private final SemanticSearchService semanticSearchService;
 
-        @Value("${ai.chat-model:meta-llama/llama-3.2-3b-instruct:free}")
+        @Value("${ai.chat-model:google/gemma-3-12b-it:free}")
         private String chatModel;
 
         private static final String SYSTEM_PROMPT = """
