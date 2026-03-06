@@ -96,33 +96,50 @@ public class AiChatService {
         }
 
         private String callChatApi(String systemPrompt, String userMessage) {
-                try {
-                        Map<String, Object> request = Map.of(
-                                        "model", chatModel,
-                                        "messages", List.of(
-                                                        Map.of("role", "system", "content", systemPrompt),
-                                                        Map.of("role", "user", "content", userMessage)),
-                                        "temperature", 0.3,
-                                        "max_tokens", 1000);
+                List<String> modelsToTry = List.of(
+                                chatModel,
+                                "google/gemini-2.0-flash-lite-preview-02-05:free",
+                                "meta-llama/llama-3-8b-instruct:free",
+                                "mistralai/mistral-7b-instruct:free");
 
-                        Map response = aiWebClient.post()
-                                        .uri("/chat/completions")
-                                        .bodyValue(request)
-                                        .retrieve()
-                                        .bodyToMono(Map.class)
-                                        .block();
+                Exception lastException = null;
 
-                        if (response == null) {
-                                return "I'm having trouble connecting to the AI service. Please try again.";
+                for (String model : modelsToTry) {
+                        try {
+                                Map<String, Object> request = Map.of(
+                                                "model", model,
+                                                "messages", List.of(
+                                                                Map.of("role", "system", "content", systemPrompt),
+                                                                Map.of("role", "user", "content", userMessage)),
+                                                "temperature", 0.3,
+                                                "max_tokens", 1000);
+
+                                Map response = aiWebClient.post()
+                                                .uri("/chat/completions")
+                                                .bodyValue(request)
+                                                .retrieve()
+                                                .bodyToMono(Map.class)
+                                                .block();
+
+                                if (response != null && response.containsKey("choices")) {
+                                        List<Map<String, Object>> choices = (List<Map<String, Object>>) response
+                                                        .get("choices");
+                                        Map<String, Object> message = (Map<String, Object>) choices.get(0)
+                                                        .get("message");
+                                        return (String) message.get("content");
+                                }
+                        } catch (Exception e) {
+                                log.warn("API call failed for model {}: {}", model, e.getMessage());
+                                lastException = e;
                         }
-
-                        List<Map<String, Object>> choices = (List<Map<String, Object>>) response.get("choices");
-                        Map<String, Object> message = (Map<String, Object>) choices.get(0).get("message");
-                        return (String) message.get("content");
-
-                } catch (Exception e) {
-                        log.error("Chat API call failed: {}", e.getMessage());
-                        return "Sorry, I encountered an error while processing your question. Please try again.";
                 }
+
+                log.error("All Chat API calls failed. Last error: {}",
+                                lastException != null ? lastException.getMessage() : "Unknown");
+                if (lastException != null && lastException.getMessage() != null
+                                && lastException.getMessage().contains("429")) {
+                        return "AI provider is currently busy (Too Many Requests). Please wait a few seconds and try again.";
+                }
+                return "Sorry, I encountered an error while connecting to the AI brain. Please try again.";
         }
 }
