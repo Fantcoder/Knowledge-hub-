@@ -11,7 +11,6 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
-
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -97,8 +96,9 @@ public class AiChatService {
                 // Models to try in order — only switch model on 400/404 (model broken)
                 List<String> models = List.of(
                                 chatModel,
-                                "google/gemma-3-4b-it:free",
-                                "meta-llama/llama-3.2-3b-instruct:free");
+                                "meta-llama/llama-3.3-70b-instruct:free",
+                                "qwen/qwen-2.5-coder-32b-instruct:free",
+                                "google/gemini-2.0-flash-lite-preview-02-05:free");
 
                 for (String model : models) {
                         String result = callWithBackoff(model, systemPrompt, userMessage);
@@ -152,6 +152,15 @@ public class AiChatService {
                                                                                                                                 200)
                                                                                                                 : body);
                                                                                 if (code == 429) {
+                                                                                        if (body.contains("upstream")) {
+                                                                                                // Upstream provider is
+                                                                                                // out of capacity, so
+                                                                                                // falling back to
+                                                                                                // another model is best
+                                                                                                return Mono.just(Map.of(
+                                                                                                                "__error_type",
+                                                                                                                "model_error"));
+                                                                                        }
                                                                                         return Mono.just(Map.of(
                                                                                                         "__error_type",
                                                                                                         "rate_limited"));
