@@ -66,6 +66,16 @@
             <artifactId>flyway-mysql</artifactId>
         </dependency>
 
+        <!-- Caffeine Caching (Phase 3 Optimization - Local Memory) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-cache</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.github.ben-manes.caffeine</groupId>
+            <artifactId>caffeine</artifactId>
+        </dependency>
+
         <!-- Spring WebFlux (WebClient for OpenAI API calls) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

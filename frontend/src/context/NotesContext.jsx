@@ -165,53 +165,83 @@ export function NotesProvider({ children }) {
     }, [])
 
     const deleteNote = useCallback(async (id) => {
+        // Optimistic update
+        const noteToHide = state.notes.find(n => n.id === id)
+        if (!noteToHide) return;
+        dispatch({ type: 'REMOVE_NOTE', payload: id })
         try {
             await noteService.delete(id)
-            dispatch({ type: 'REMOVE_NOTE', payload: id })
             toast.success('Note moved to trash')
         } catch {
+            // Revert
+            dispatch({ type: 'ADD_NOTE', payload: noteToHide })
             toast.error('Failed to delete note')
         }
-    }, [])
+    }, [state.notes])
 
     const permanentDeleteNote = useCallback(async (id) => {
+        // Optimistic Update
+        const noteToHide = state.notes.find(n => n.id === id)
+        if (!noteToHide) return;
+        dispatch({ type: 'REMOVE_NOTE', payload: id })
         try {
             await noteService.permanentDelete(id)
-            dispatch({ type: 'REMOVE_NOTE', payload: id })
             toast.success('Note permanently deleted')
         } catch {
+            // Revert
+            dispatch({ type: 'ADD_NOTE', payload: noteToHide })
             toast.error('Failed to delete note')
         }
-    }, [])
+    }, [state.notes])
 
     const restoreNote = useCallback(async (id) => {
+        // Optimistic Update
+        const noteToHide = state.notes.find(n => n.id === id)
+        if (!noteToHide) return;
+        dispatch({ type: 'REMOVE_NOTE', payload: id })
         try {
             await noteService.restore(id)
-            dispatch({ type: 'REMOVE_NOTE', payload: id })
             toast.success('Note restored')
         } catch {
+            // Revert
+            dispatch({ type: 'ADD_NOTE', payload: noteToHide })
             toast.error('Failed to restore note')
         }
-    }, [])
+    }, [state.notes])
 
     const togglePin = useCallback(async (id) => {
+        // Optimistic Update
+        const note = state.notes.find(n => n.id === id)
+        if (!note) return;
+        const optimisticNote = { ...note, isPinned: !note.isPinned }
+        dispatch({ type: 'UPDATE_NOTE', payload: optimisticNote })
+
         try {
             const res = await noteService.pin(id)
+            // Replace with server reality just in case
             dispatch({ type: 'UPDATE_NOTE', payload: res.data.data })
         } catch {
+            // Revert
+            dispatch({ type: 'UPDATE_NOTE', payload: note })
             toast.error('Failed to update note')
         }
-    }, [])
+    }, [state.notes])
 
     const toggleArchive = useCallback(async (id) => {
+        // Optimistic Update
+        const noteToHide = state.notes.find(n => n.id === id)
+        if (!noteToHide) return;
+        dispatch({ type: 'REMOVE_NOTE', payload: id })
+
         try {
             const res = await noteService.archive(id)
-            dispatch({ type: 'REMOVE_NOTE', payload: id })
             toast.success(res.data.data.isArchived ? 'Note archived' : 'Note unarchived')
         } catch {
+            // Revert
+            dispatch({ type: 'ADD_NOTE', payload: noteToHide })
             toast.error('Failed to archive note')
         }
-    }, [])
+    }, [state.notes])
 
     return (
         <NotesContext.Provider

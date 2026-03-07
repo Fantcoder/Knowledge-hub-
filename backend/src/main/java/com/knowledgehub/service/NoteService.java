@@ -16,6 +16,8 @@ import org.jsoup.Jsoup;
 import org.jsoup.safety.Safelist;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -57,6 +59,7 @@ public class NoteService {
     }
 
     @Transactional
+    @CacheEvict(value = { "notesList", "noteById" }, allEntries = true)
     public NoteResponse createNote(NoteRequest request) {
         User user = getCurrentUser();
         Set<Tag> tags = resolveOrCreateTags(request.getTags(), user);
@@ -134,6 +137,7 @@ public class NoteService {
     // ── Non-paginated queries (for export, internal services) ───────────
 
     @Transactional(readOnly = true)
+    @Cacheable(value = "notesList", key = "T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName() + '-' + (#filter != null ? #filter : 'null') + '-' + (#tagName != null ? #tagName : 'null')")
     public List<NoteResponse> getNotes(String filter, String tagName) {
         User user = getCurrentUser();
 
@@ -156,6 +160,7 @@ public class NoteService {
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(value = "noteById", key = "T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName() + '-' + #id")
     public NoteResponse getNoteById(Long id) {
         User user = getCurrentUser();
         Note note = noteRepository.findByIdAndUser(id, user)
@@ -164,6 +169,7 @@ public class NoteService {
     }
 
     @Transactional
+    @CacheEvict(value = { "notesList", "noteById" }, allEntries = true)
     public NoteResponse updateNote(Long id, NoteRequest request) {
         User user = getCurrentUser();
         Note note = noteRepository.findByIdAndUser(id, user)
@@ -194,6 +200,7 @@ public class NoteService {
     }
 
     @Transactional
+    @CacheEvict(value = { "notesList", "noteById" }, allEntries = true)
     public void softDeleteNote(Long id) {
         User user = getCurrentUser();
         Note note = noteRepository.findByIdAndUser(id, user)
@@ -204,6 +211,7 @@ public class NoteService {
     }
 
     @Transactional
+    @CacheEvict(value = { "notesList", "noteById" }, allEntries = true)
     public void permanentDeleteNote(Long id) {
         User user = getCurrentUser();
         Note note = noteRepository.findByIdAndUser(id, user)
@@ -212,6 +220,7 @@ public class NoteService {
     }
 
     @Transactional
+    @CacheEvict(value = { "notesList", "noteById" }, allEntries = true)
     public NoteResponse restoreNote(Long id) {
         User user = getCurrentUser();
         Note note = noteRepository.findByIdAndUser(id, user)
@@ -221,6 +230,7 @@ public class NoteService {
     }
 
     @Transactional
+    @CacheEvict(value = { "notesList", "noteById" }, allEntries = true)
     public NoteResponse togglePin(Long id) {
         User user = getCurrentUser();
         Note note = noteRepository.findByIdAndUser(id, user)
@@ -230,6 +240,7 @@ public class NoteService {
     }
 
     @Transactional
+    @CacheEvict(value = { "notesList", "noteById" }, allEntries = true)
     public NoteResponse toggleArchive(Long id) {
         User user = getCurrentUser();
         Note note = noteRepository.findByIdAndUser(id, user)

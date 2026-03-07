@@ -10,11 +10,18 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonNode;
+import org.springframework.http.MediaType;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 @Service
 @RequiredArgsConstructor
@@ -23,6 +30,7 @@ public class AiChatService {
 
         private final WebClient aiWebClient;
         private final SemanticSearchService semanticSearchService;
+        private final ObjectMapper objectMapper;
 
         @Value("${ai.chat-model:meta-llama/llama-3.2-3b-instruct:free}")
         private String chatModel;
@@ -86,6 +94,121 @@ public class AiChatService {
                                 .build();
         }
 
+        public Flux<String> chatStream(User user, ChatRequest request) {
+                log.info("AI chat stream for user {}: '{}'", user.getUsername(), request.getQuestion());
+
+                List<SemanticSearchResult> relevantNotes = semanticSearchService.search(
+                                user, request.getQuestion(), 5);
+
+                List<Map<String, Object>> sourcesList = relevantNotes.stream()
+                                .map(n -> Map.<String, Object>of(
+                                                "noteId", n.getNoteId(),
+                                                "title", n.getTitle(),
+                                                "similarity", n.getSimilarity()))
+                                .collect(Collectors.toList());
+
+                String sourcesJson;
+                try {
+                        sourcesJson = objectMapper
+                                        .writeValueAsString(Map.of("type", "sources", "sources", sourcesList));
+                } catch (Exception e) {
+                        sourcesJson = "{}";
+                }
+
+                if (relevantNotes.isEmpty()) {
+                        try {
+                                String contentJson = objectMapper.writeValueAsString(Map.of(
+                                                "type", "content",
+                                                "content",
+                                                "I don't have enough context from your notes to answer this question. Try saving some notes first, and I'll be able to help you find and connect ideas!"));
+                                return Flux.just(sourcesJson, contentJson);
+                        } catch (Exception e) {
+                                return Flux.empty();
+                        }
+                }
+
+                String context = relevantNotes.stream()
+                                .map(n -> String.format("--- Note: \"%s\" (relevance: %.0f%%) ---\n%s",
+                                                n.getTitle(),
+                                                n.getSimilarity() * 100,
+                                                n.getContentPreview()))
+                                .collect(Collectors.joining("\n\n"));
+
+                String fullSystemPrompt = SYSTEM_PROMPT + "\n" + context;
+
+                List<String> models = List.of(
+                                chatModel,
+                                "llama-3.1-8b-instant",
+                                "mixtral-8x7b-32768",
+                                "gemma2-9b-it");
+
+                Flux<String> stream = tryModelStream(models, 0, fullSystemPrompt, request.getQuestion());
+
+                return Flux.concat(Mono.just(sourcesJson), stream);
+        }
+
+        private Flux<String> tryModelStream(List<String> models, int index, String systemPrompt, String userMessage) {
+                if (index >= models.size()) {
+                        try {
+                                return Flux.just(objectMapper.writeValueAsString(Map.of(
+                                                "type", "content",
+                                                "content",
+                                                "\n\n*(Error: AI is temporarily overloaded. Please try again later.)*")));
+                        } catch (Exception e) {
+                                return Flux.empty();
+                        }
+                }
+                String model = models.get(index);
+                log.info("Attempting stream with model: {}", model);
+
+                Map<String, Object> requestBody = Map.of(
+                                "model", model,
+                                "stream", true,
+                                "messages", List.of(
+                                                Map.of("role", "system", "content", systemPrompt),
+                                                Map.of("role", "user", "content", userMessage)),
+                                "temperature", 0.3,
+                                "max_tokens", 1000);
+
+                return aiWebClient.post()
+                                .uri("/chat/completions")
+                                .bodyValue(requestBody)
+                                .accept(MediaType.TEXT_EVENT_STREAM)
+                                .retrieve()
+                                .bodyToFlux(String.class)
+                                .filter(line -> line != null && line.length() > 0 && !line.equals("[DONE]"))
+                                .flatMap(json -> {
+                                        try {
+                                                JsonNode root = objectMapper.readTree(json);
+                                                if (root.has("error")) {
+                                                        throw new RuntimeException(
+                                                                        "API Error: " + root.get("error").toString());
+                                                }
+                                                JsonNode choices = root.get("choices");
+                                                if (choices != null && choices.size() > 0) {
+                                                        JsonNode delta = choices.get(0).get("delta");
+                                                        if (delta != null && delta.has("content")) {
+                                                                String content = delta.get("content").asText();
+                                                                return Mono.just(objectMapper.writeValueAsString(Map.of(
+                                                                                "type", "content",
+                                                                                "content", content)));
+                                                        }
+                                                }
+                                        } catch (Exception e) {
+                                                // Ignore parse errors for partial chunks, OpenRouter might return weird
+                                                // 200s
+                                        }
+                                        return Mono.empty();
+                                })
+                                .timeout(Duration.ofSeconds(15))
+                                .onErrorResume(e -> {
+                                        log.warn("Model {} stream failed or rate-limited: {}. Trying next model...",
+                                                        model, e.getMessage());
+                                        return Mono.delay(Duration.ofSeconds(2)).thenMany(
+                                                        tryModelStream(models, index + 1, systemPrompt, userMessage));
+                                });
+        }
+
         /**
          * Calls the OpenRouter API with exponential backoff retry.
          * OpenRouter rate-limits per API key (not per model), so the ONLY
@@ -96,9 +219,9 @@ public class AiChatService {
                 // Models to try in order — only switch model on 400/404 (model broken)
                 List<String> models = List.of(
                                 chatModel,
-                                "meta-llama/llama-3.3-70b-instruct:free",
-                                "qwen/qwen-2.5-coder-32b-instruct:free",
-                                "google/gemini-2.0-flash-lite-preview-02-05:free");
+                                "llama-3.1-8b-instant",
+                                "mixtral-8x7b-32768",
+                                "gemma2-9b-it");
 
                 for (String model : models) {
                         String result = callWithBackoff(model, systemPrompt, userMessage);

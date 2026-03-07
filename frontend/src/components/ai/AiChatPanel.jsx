@@ -36,23 +36,50 @@ export default function AiChatPanel({ isOpen, onClose }) {
 
         const question = input.trim()
         setInput('')
+
+        // Add user message
         setMessages(prev => [...prev, { role: 'user', content: question }])
+
+        // Add empty assistant message that we will stream into
+        setMessages(prev => [...prev, { role: 'assistant', content: '', sources: [] }])
         setIsLoading(true)
 
         try {
-            const res = await aiService.chat(question)
-            const data = res.data.data
-            setMessages(prev => [...prev, {
-                role: 'assistant',
-                content: data.answer,
-                sources: data.sourceNotes || [],
-            }])
+            const onSources = (sources) => {
+                setMessages(prev => {
+                    const newMsgs = [...prev]
+                    newMsgs[newMsgs.length - 1].sources = sources
+                    return newMsgs
+                })
+            }
+
+            const stream = aiService.chatStream(question, onSources)
+            let isFirstChunk = true
+
+            // Read the stream chunk-by-chunk using 'for await'
+            for await (const chunk of stream) {
+                if (isFirstChunk) {
+                    setIsLoading(false) // Stop pulsing once we receive the very first chunk
+                    isFirstChunk = false
+                }
+                setMessages(prev => {
+                    const newMsgs = [...prev]
+                    newMsgs[newMsgs.length - 1].content += chunk
+                    return newMsgs
+                })
+            }
         } catch (err) {
-            setMessages(prev => [...prev, {
-                role: 'assistant',
-                content: 'Sorry, I couldn\'t process your question. Make sure your OPENAI_API_KEY is configured and your notes are embedded.',
-                isError: true,
-            }])
+            setMessages(prev => {
+                const newMsgs = [...prev]
+                // Only show error if nothing streamed successfully
+                if (newMsgs[newMsgs.length - 1].content === '') {
+                    newMsgs[newMsgs.length - 1].content = 'Sorry, the AI brain is currently overloaded. Please try again in 30 seconds.'
+                    newMsgs[newMsgs.length - 1].isError = true
+                } else {
+                    newMsgs[newMsgs.length - 1].content += '\n\n*(Connection interrupted)*'
+                }
+                return newMsgs
+            })
         } finally {
             setIsLoading(false)
         }
@@ -125,10 +152,10 @@ export default function AiChatPanel({ isOpen, onClose }) {
                     {messages.map((msg, i) => (
                         <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                             <div className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${msg.role === 'user'
-                                    ? 'bg-accent text-accent-ink rounded-br-md'
-                                    : msg.isError
-                                        ? 'bg-danger-soft text-ink border border-danger/20 rounded-bl-md'
-                                        : 'bg-surface-2 text-ink rounded-bl-md'
+                                ? 'bg-accent text-accent-ink rounded-br-md'
+                                : msg.isError
+                                    ? 'bg-danger-soft text-ink border border-danger/20 rounded-bl-md'
+                                    : 'bg-surface-2 text-ink rounded-bl-md'
                                 }`}>
                                 {/* Message content */}
                                 <div className="whitespace-pre-wrap">{msg.content}</div>

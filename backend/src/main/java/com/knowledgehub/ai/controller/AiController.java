@@ -15,9 +15,11 @@ import com.knowledgehub.repository.UserRepository;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Flux;
 
 import java.util.List;
 import java.util.Map;
@@ -43,6 +45,15 @@ public class AiController {
         User user = getCurrentUser();
         ChatResponse response = chatService.chat(user, request);
         return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    /**
+     * POST /api/ai/chat/stream — Stream the AI chat response word-by-word
+     */
+    @PostMapping(value = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public Flux<String> chatStream(@Valid @RequestBody ChatRequest request) {
+        User user = getCurrentUser();
+        return chatService.chatStream(user, request);
     }
 
     /**
