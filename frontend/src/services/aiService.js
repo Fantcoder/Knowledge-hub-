@@ -1,4 +1,5 @@
 import api from './api'
+import { API_BASE_URL } from '../utils/constants'
 
 export const aiService = {
     // Chat with your notes (RAG) — long timeout needed for retry backoff
@@ -7,8 +8,8 @@ export const aiService = {
 
     // Streaming chat with your notes (Server-Sent Events)
     chatStream: async function* (question, onSources, contextNoteIds = []) {
-        const token = localStorage.getItem('token');
-        const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+        const token = localStorage.getItem('accessToken');
+        const baseUrl = API_BASE_URL;
 
         const response = await fetch(`${baseUrl}/ai/chat/stream`, {
             method: 'POST',
