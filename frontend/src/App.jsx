@@ -13,6 +13,7 @@ const AiChatPanel = lazy(() => import('./components/ai/AiChatPanel'))
 const Login = lazy(() => import('./pages/Login'))
 const Register = lazy(() => import('./pages/Register'))
 const Dashboard = lazy(() => import('./pages/Dashboard'))
+const Graph = lazy(() => import('./pages/Graph'))
 const NoteCreate = lazy(() => import('./pages/NoteCreate'))
 const NoteEdit = lazy(() => import('./pages/NoteEdit'))
 const NoteView = lazy(() => import('./pages/NoteView'))
@@ -109,6 +110,7 @@ export default function App() {
                                     <Route element={<Layout />}>
                                         <Route path="/" element={<Navigate to="/dashboard" replace />} />
                                         <Route path="/dashboard" element={<Dashboard />} />
+                                        <Route path="/graph" element={<Graph />} />
                                         <Route path="/notes/new" element={<NoteCreate />} />
                                         <Route path="/notes/:id" element={<NoteView />} />
                                         <Route path="/notes/:id/edit" element={<NoteEdit />} />

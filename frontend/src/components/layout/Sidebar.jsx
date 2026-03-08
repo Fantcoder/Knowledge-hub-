@@ -95,6 +95,7 @@ export default function Sidebar({ isOpen, onClose }) {
                     </div>
 
                     <p className="label px-3 pt-6 pb-1">library</p>
+                    <NavItem to="/graph" label="Graph View" id="nav-graph" />
                     <NavItem to="/links" label="Links" id="nav-links" />
                     <NavItem to="/files" label="Files" id="nav-files" />
                     <NavItem to="/trash" label="Trash" id="nav-trash" />

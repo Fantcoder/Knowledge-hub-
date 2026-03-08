@@ -73,4 +73,7 @@ public interface NoteRepository extends JpaRepository<Note, Long> {
 
        @EntityGraph(attributePaths = { "tags" })
        Optional<Note> findByIdAndUser(Long id, User user);
+
+       @EntityGraph(attributePaths = { "tags" })
+       List<Note> findAllByUserAndIsDeletedFalse(User user);
 }
