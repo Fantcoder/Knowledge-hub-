@@ -16,8 +16,9 @@ export default function Dashboard() {
     useEffect(() => { fetchNotes(activeFilter, activeTag) }, [activeFilter, activeTag])
     useEffect(() => { tagService.getAll().then((r) => setTags(r.data.data || [])).catch(() => { }) }, [])
 
-    const pinned = notes.filter((n) => n.isPinned && !n.isDeleted && !n.isArchived)
-    const rest = notes.filter((n) => !n.isPinned)
+    const isDefaultView = activeFilter === 'active' && !activeTag && !searchQuery
+    const displayedPinned = isDefaultView ? notes.filter(n => n.isPinned && !n.isDeleted && !n.isArchived) : []
+    const displayedRecent = isDefaultView ? notes.filter(n => !n.isPinned) : notes
 
     const title = searchQuery ? 'Search results'
         : activeTag ? `#${activeTag}`
@@ -48,20 +49,20 @@ export default function Dashboard() {
             )}
 
             {/* Pinned */}
-            {pinned.length > 0 && activeFilter === 'active' && !activeTag && !searchQuery && (
+            {displayedPinned.length > 0 && (
                 <section>
                     <p className="label mb-3">pinned</p>
-                    <NoteGrid notes={pinned} />
+                    <NoteGrid notes={displayedPinned} />
                 </section>
             )}
 
             {/* Notes */}
             <section>
-                {pinned.length > 0 && activeFilter === 'active' && !activeTag && !searchQuery && (
+                {displayedPinned.length > 0 && (
                     <p className="label mb-3">recent</p>
                 )}
                 <NoteGrid
-                    notes={rest.length > 0 || pinned.length > 0 ? rest : notes}
+                    notes={displayedRecent}
                     emptyTitle={activeFilter === 'active' ? 'A blank page' : activeFilter === 'archived' ? 'Nothing archived' : 'Empty'}
                     emptyDescription={activeFilter === 'active' ? 'Start writing. Your first note is one click away.' : ''}
                 />

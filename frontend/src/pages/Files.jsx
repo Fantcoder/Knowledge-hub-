@@ -15,7 +15,10 @@ export default function Files() {
 
     useEffect(() => {
         fileService.getAll()
-            .then((r) => setFiles(r.data.data || []))
+            .then((r) => {
+                const data = r.data.data
+                setFiles(data?.content || data || [])
+            })
             .catch(() => toast.error('Failed to load files'))
             .finally(() => setLoading(false))
     }, [])

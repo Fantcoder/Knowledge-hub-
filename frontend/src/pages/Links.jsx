@@ -13,7 +13,10 @@ export default function Links() {
 
     useEffect(() => {
         linkService.getAll()
-            .then((r) => setLinks(r.data.data || []))
+            .then((r) => {
+                const data = r.data.data
+                setLinks(data?.content || data || [])
+            })
             .catch(() => toast.error('Failed to load links'))
             .finally(() => setLoading(false))
     }, [])
