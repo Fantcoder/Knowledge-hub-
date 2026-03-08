@@ -43,6 +43,23 @@ export function AuthProvider({ children }) {
         }
     }, [])
 
+    const googleLogin = useCallback(async (idToken) => {
+        dispatch({ type: 'SET_LOADING', payload: true })
+        try {
+            const { data } = await authService.googleLogin(idToken)
+            const { accessToken, refreshToken, ...user } = data.data
+            localStorage.setItem('accessToken', accessToken)
+            localStorage.setItem('refreshToken', refreshToken)
+            localStorage.setItem('user', JSON.stringify(user))
+            dispatch({ type: 'LOGIN_SUCCESS', payload: user })
+            return { success: true }
+        } catch (error) {
+            dispatch({ type: 'SET_LOADING', payload: false })
+            const msg = error.response?.data?.error || 'Google Login failed.'
+            return { success: false, message: msg }
+        }
+    }, [])
+
     const register = useCallback(async (data) => {
         dispatch({ type: 'SET_LOADING', payload: true })
         try {
@@ -80,7 +97,7 @@ export function AuthProvider({ children }) {
     }, [])
 
     return (
-        <AuthContext.Provider value={{ ...state, login, register, logout }}>
+        <AuthContext.Provider value={{ ...state, login, googleLogin, register, logout }}>
             {children}
         </AuthContext.Provider>
     )

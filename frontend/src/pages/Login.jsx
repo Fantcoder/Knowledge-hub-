@@ -2,13 +2,24 @@ import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import toast from 'react-hot-toast'
+import { GoogleLogin } from '@react-oauth/google'
 
 export default function Login() {
     const [form, setForm] = useState({ username: '', password: '' })
     const [showPw, setShowPw] = useState(false)
     const [loading, setLoading] = useState(false)
-    const { login } = useAuth()
+    const { login, googleLogin } = useAuth()
     const navigate = useNavigate()
+
+    const handleGoogleSuccess = async (credentialResponse) => {
+        setLoading(true)
+        try {
+            await googleLogin(credentialResponse.credential)
+            navigate('/dashboard')
+        } catch (err) {
+            toast.error('Google login failed')
+        } finally { setLoading(false) }
+    }
 
     const handleSubmit = async (e) => {
         e.preventDefault()
@@ -51,12 +62,29 @@ export default function Login() {
                         <p className="text-sm text-ink-faint">Sign in to continue</p>
                     </div>
 
+                    <div className="flex justify-center mb-6">
+                        <GoogleLogin
+                            onSuccess={handleGoogleSuccess}
+                            onError={() => toast.error('Google login failed')}
+                            theme="outline"
+                            size="large"
+                            text="signin_with"
+                            width="250"
+                        />
+                    </div>
+
+                    <div className="flex items-center gap-4 mb-6">
+                        <div className="h-px bg-border flex-1"></div>
+                        <span className="text-xs text-ink-ghost uppercase tracking-wider">or sign in with email</span>
+                        <div className="h-px bg-border flex-1"></div>
+                    </div>
+
                     <form id="login-form" onSubmit={handleSubmit} className="space-y-4">
                         <div>
-                            <label className="label" htmlFor="username">Username</label>
+                            <label className="label" htmlFor="username">Username or Email</label>
                             <input id="username" type="text" required value={form.username}
                                 onChange={(e) => setForm({ ...form, username: e.target.value })}
-                                className="input" placeholder="your username" autoComplete="username" />
+                                className="input" placeholder="your username or email" autoComplete="username" />
                         </div>
 
                         <div>

@@ -1,5 +1,11 @@
 package com.knowledgehub.service;
 
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.json.gson.GsonFactory;
+import com.knowledgehub.dto.request.GoogleLoginRequest;
+
 import com.knowledgehub.dto.request.LoginRequest;
 import com.knowledgehub.dto.request.RegisterRequest;
 import com.knowledgehub.dto.response.AuthResponse;
@@ -16,6 +22,9 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.beans.factory.annotation.Value;
+import java.util.Collections;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -27,6 +36,9 @@ public class AuthService {
     private final JwtUtil jwtUtil;
     private final AuthenticationManager authenticationManager;
     private final UserDetailsService userDetailsService;
+
+    @Value("${google.client.id}")
+    private String googleClientId;
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
@@ -87,6 +99,55 @@ public class AuthService {
         String newRefreshToken = jwtUtil.generateRefreshToken(userDetails);
 
         return buildAuthResponse(user, newAccessToken, newRefreshToken);
+    }
+
+    @Transactional
+    public AuthResponse googleLogin(GoogleLoginRequest request) {
+        try {
+            GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(
+                    new NetHttpTransport(), new GsonFactory())
+                    .setAudience(Collections.singletonList(googleClientId))
+                    .build();
+
+            GoogleIdToken idToken = verifier.verify(request.getIdToken());
+            if (idToken == null) {
+                throw new IllegalArgumentException("Invalid Google ID token");
+            }
+
+            GoogleIdToken.Payload payload = idToken.getPayload();
+            String email = payload.getEmail();
+            String name = (String) payload.get("name");
+
+            User user = userRepository.findByEmail(email).orElseGet(() -> {
+                // Determine a unique username
+                String baseUsername = email.split("@")[0].replaceAll("[^a-zA-Z0-9]", "");
+                String username = baseUsername;
+                int suffix = 1;
+                while (userRepository.existsByUsername(username)) {
+                    username = baseUsername + suffix++;
+                }
+
+                // Create a new user with a random un-guessable password
+                User newUser = User.builder()
+                        .username(username)
+                        .email(email)
+                        .password(passwordEncoder.encode(UUID.randomUUID().toString()))
+                        .build();
+
+                log.info("New user registered via Google: {}", username);
+                return userRepository.save(newUser);
+            });
+
+            UserDetails userDetails = userDetailsService.loadUserByUsername(user.getUsername());
+            String accessToken = jwtUtil.generateAccessToken(userDetails);
+            String refreshToken = jwtUtil.generateRefreshToken(userDetails);
+
+            log.info("User logged in via Google: {}", user.getUsername());
+            return buildAuthResponse(user, accessToken, refreshToken);
+        } catch (Exception e) {
+            log.error("Google authentication failed", e);
+            throw new IllegalArgumentException("Google authentication failed: " + e.getMessage());
+        }
     }
 
     private AuthResponse buildAuthResponse(User user, String accessToken, String refreshToken) {

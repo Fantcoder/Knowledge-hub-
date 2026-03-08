@@ -1,7 +1,12 @@
 import ReactDOM from 'react-dom/client'
 import App from './App.jsx'
 import './index.css'
+import { GoogleOAuthProvider } from '@react-oauth/google'
 
-// StrictMode intentionally runs effects twice in dev — removed to prevent
-// duplicate API calls (double "Note not found", "Failed to load notes" toasts)
-ReactDOM.createRoot(document.getElementById('root')).render(<App />)
+const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '855427183041-example-client-id.apps.googleusercontent.com'
+
+ReactDOM.createRoot(document.getElementById('root')).render(
+    <GoogleOAuthProvider clientId={clientId}>
+        <App />
+    </GoogleOAuthProvider>
+)

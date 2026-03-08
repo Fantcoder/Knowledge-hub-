@@ -3,12 +3,25 @@ import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import toast from 'react-hot-toast'
 
+import { GoogleLogin } from '@react-oauth/google'
+
 export default function Register() {
     const [form, setForm] = useState({ username: '', email: '', password: '' })
     const [showPw, setShowPw] = useState(false)
     const [loading, setLoading] = useState(false)
-    const { register } = useAuth()
+    const { register, googleLogin } = useAuth()
     const navigate = useNavigate()
+
+    const handleGoogleSuccess = async (credentialResponse) => {
+        setLoading(true)
+        try {
+            await googleLogin(credentialResponse.credential)
+            navigate('/dashboard')
+            toast.success('Account created!')
+        } catch (err) {
+            toast.error('Google registration failed')
+        } finally { setLoading(false) }
+    }
 
     const pwStrength = (() => {
         const p = form.password
@@ -61,6 +74,23 @@ export default function Register() {
                         <p className="text-sm text-ink-faint">Start building your personal knowledge base</p>
                     </div>
 
+                    <div className="flex justify-center mb-6">
+                        <GoogleLogin
+                            onSuccess={handleGoogleSuccess}
+                            onError={() => toast.error('Google register failed')}
+                            theme="outline"
+                            size="large"
+                            text="signup_with"
+                            width="250"
+                        />
+                    </div>
+
+                    <div className="flex items-center gap-4 mb-6">
+                        <div className="h-px bg-border flex-1"></div>
+                        <span className="text-xs text-ink-ghost uppercase tracking-wider">or sign up with email</span>
+                        <div className="h-px bg-border flex-1"></div>
+                    </div>
+
                     <form id="register-form" onSubmit={handleSubmit} className="space-y-4">
                         <div>
                             <label className="label" htmlFor="username">Username</label>
@@ -95,8 +125,8 @@ export default function Register() {
                                     <div className="flex gap-1 flex-1">
                                         {[1, 2, 3, 4].map((i) => (
                                             <div key={i} className={`h-0.5 flex-1 rounded-full transition-colors duration-300 ${i <= pwStrength.level
-                                                    ? pwStrength.level <= 1 ? 'bg-danger' : pwStrength.level <= 2 ? 'bg-yellow-500' : 'bg-green-500'
-                                                    : 'bg-surface-3'
+                                                ? pwStrength.level <= 1 ? 'bg-danger' : pwStrength.level <= 2 ? 'bg-yellow-500' : 'bg-green-500'
+                                                : 'bg-surface-3'
                                                 }`} />
                                         ))}
                                     </div>
