@@ -136,11 +136,7 @@ public class AiChatService {
 
                 String fullSystemPrompt = SYSTEM_PROMPT + "\n" + context;
 
-                List<String> models = List.of(
-                                chatModel,
-                                "llama-3.1-8b-instant",
-                                "mixtral-8x7b-32768",
-                                "gemma2-9b-it");
+                List<String> models = List.of(chatModel);
 
                 Flux<String> stream = tryModelStream(models, 0, fullSystemPrompt, request.getQuestion());
 
@@ -217,11 +213,7 @@ public class AiChatService {
          */
         private String callChatApiWithRetry(String systemPrompt, String userMessage) {
                 // Models to try in order — only switch model on 400/404 (model broken)
-                List<String> models = List.of(
-                                chatModel,
-                                "llama-3.1-8b-instant",
-                                "mixtral-8x7b-32768",
-                                "gemma2-9b-it");
+                List<String> models = List.of(chatModel);
 
                 for (String model : models) {
                         String result = callWithBackoff(model, systemPrompt, userMessage);

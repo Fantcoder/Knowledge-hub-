@@ -49,7 +49,7 @@ public class AiTaggingService {
                 noteContent != null ? noteContent : "");
 
         Map<String, Object> requestBody = Map.of(
-                "model", "meta-llama/llama-3.3-70b-instruct:free", // Hardcoded to 70B for strict JSON reasoning
+                "model", taggingModelStr,
                 "messages", List.of(
                         Map.of("role", "system", "content", TAGGING_SYSTEM_PROMPT),
                         Map.of("role", "user", "content", input)),

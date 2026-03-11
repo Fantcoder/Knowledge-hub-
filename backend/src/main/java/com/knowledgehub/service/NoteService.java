@@ -7,7 +7,6 @@ import com.knowledgehub.entity.Note;
 import com.knowledgehub.entity.Tag;
 import com.knowledgehub.entity.User;
 import com.knowledgehub.exception.ResourceNotFoundException;
-import com.knowledgehub.config.ApplicationContextHolder;
 import com.knowledgehub.ai.service.AiTaggingService;
 import com.knowledgehub.ai.service.EmbeddingService;
 import com.knowledgehub.repository.NoteRepository;
