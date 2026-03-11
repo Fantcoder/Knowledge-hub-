@@ -7,6 +7,8 @@ import com.knowledgehub.entity.Note;
 import com.knowledgehub.entity.Tag;
 import com.knowledgehub.entity.User;
 import com.knowledgehub.exception.ResourceNotFoundException;
+import com.knowledgehub.config.ApplicationContextHolder;
+import com.knowledgehub.ai.service.AiTaggingService;
 import com.knowledgehub.ai.service.EmbeddingService;
 import com.knowledgehub.repository.NoteRepository;
 import com.knowledgehub.repository.TagRepository;
@@ -25,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 @Service
@@ -35,6 +38,7 @@ public class NoteService {
     private final UserRepository userRepository;
     private final TagRepository tagRepository;
     private final EmbeddingService embeddingService;
+    private final AiTaggingService aiTaggingService;
 
     private User getCurrentUser() {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -74,7 +78,22 @@ public class NoteService {
                 .tags(tags)
                 .build();
 
-        Note savedNote = noteRepository.save(note);
+        Note savedNote;
+
+        // Let the user save instantly without waiting for Tag Generation
+        if (tags.isEmpty()) {
+            // First time auto-tag generation
+            savedNote = noteRepository.save(note);
+            CompletableFuture.runAsync(() -> {
+                List<String> aiTags = aiTaggingService.generateTagsForContent(savedNote.getTitle(),
+                        savedNote.getContent());
+                if (!aiTags.isEmpty()) {
+                    modifyAndSaveTagsAsync(savedNote.getId(), user.getId(), aiTags);
+                }
+            });
+        } else {
+            savedNote = noteRepository.save(note);
+        }
 
         // Async: generate embedding for AI search (non-blocking)
         try {
@@ -249,6 +268,24 @@ public class NoteService {
         if (note.getIsArchived())
             note.setIsPinned(false);
         return toResponse(noteRepository.save(note));
+    }
+
+    @Transactional
+    public void modifyAndSaveTagsAsync(Long noteId, Long userId, List<String> newTags) {
+        User user = userRepository.findById(userId).orElseThrow();
+        Note note = noteRepository.findByIdAndUser(noteId, user).orElseThrow();
+
+        Set<Tag> tags = resolveOrCreateTags(newTags, user);
+        note.setTags(tags);
+        noteRepository.save(note);
+
+        // Clear caches manually since this is a separate thread
+        org.springframework.cache.CacheManager cacheManager = com.knowledgehub.config.ApplicationContextHolder
+                .getContext().getBean(org.springframework.cache.CacheManager.class);
+        if (cacheManager.getCache("notesList") != null)
+            cacheManager.getCache("notesList").clear();
+        if (cacheManager.getCache("noteById") != null)
+            cacheManager.getCache("noteById").clear();
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────
