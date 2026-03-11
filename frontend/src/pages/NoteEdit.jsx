@@ -38,10 +38,7 @@ export default function NoteEdit() {
     if (!note) return null
 
     return (
-        <div className="animate-in max-w-3xl">
-            <button id="back-btn" onClick={() => navigate(-1)} className="btn-ghost text-sm mb-4">
-                ← Back
-            </button>
+        <div className="animate-in max-w-3xl h-full flex flex-col pt-4">
             <NoteEditor initialData={note} onSave={handleSave} onCancel={() => navigate(-1)} isSaving={isSaving} />
         </div>
     )

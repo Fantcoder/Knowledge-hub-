@@ -53,6 +53,7 @@ export default function App() {
 
     return (
         <ErrorBoundary>
+            <div className="bg-aurora"></div>
             <BrowserRouter>
                 <AuthProvider>
                     <NotesProvider>

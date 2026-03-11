@@ -1,4 +1,5 @@
 import { useEditor, EditorContent } from '@tiptap/react'
+import { BubbleMenu, FloatingMenu } from '@tiptap/react/menus'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
 import Link from '@tiptap/extension-link'
@@ -9,24 +10,21 @@ import Underline from '@tiptap/extension-underline'
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight'
 import { common, createLowlight } from 'lowlight'
 import { useEffect, useCallback } from 'react'
+import { Bold, Italic, Underline as UnderlineIcon, Strikethrough, Link as LinkIcon, Highlighter, Type, Heading1, Heading2, List, ListTodo, Code, Quote } from 'lucide-react'
 
 const lowlight = createLowlight(common)
 
-/**
- * Premium Tiptap editor with toolbar, markdown shortcuts,
- * and keyboard-driven workflow. Replaces React Quill.
- */
-export default function TiptapEditor({ content, onChange, placeholder = 'Start writing…', editable = true }) {
+export default function TiptapEditor({ content, onChange, placeholder = 'Start typing (type "/" for commands)...', editable = true }) {
     const editor = useEditor({
         extensions: [
             StarterKit.configure({
-                codeBlock: false, // replaced by lowlight version
+                codeBlock: false,
                 heading: { levels: [1, 2, 3] },
             }),
             Placeholder.configure({ placeholder }),
             Link.configure({
                 openOnClick: false,
-                HTMLAttributes: { class: 'text-accent underline hover:opacity-80 transition-opacity' },
+                HTMLAttributes: { class: 'text-accent underline hover:opacity-80 transition-opacity cursor-pointer' },
             }),
             Highlight.configure({
                 HTMLAttributes: { class: 'bg-accent-soft text-ink rounded px-0.5' },
@@ -40,7 +38,7 @@ export default function TiptapEditor({ content, onChange, placeholder = 'Start w
         editable,
         editorProps: {
             attributes: {
-                class: 'prose prose-neutral dark:prose-invert max-w-none focus:outline-none min-h-[300px] px-1 py-2',
+                class: 'prose prose-neutral dark:prose-invert max-w-none focus:outline-none min-h-[50vh]',
             },
         },
         onUpdate: ({ editor }) => {
@@ -48,7 +46,6 @@ export default function TiptapEditor({ content, onChange, placeholder = 'Start w
         },
     })
 
-    // Sync external content changes (e.g. loading a note)
     useEffect(() => {
         if (editor && content !== undefined && editor.getHTML() !== content) {
             editor.commands.setContent(content || '', false)
@@ -70,175 +67,81 @@ export default function TiptapEditor({ content, onChange, placeholder = 'Start w
     if (!editor) return null
 
     return (
-        <div className="tiptap-wrapper">
-            {/* ── Toolbar ────────────────────────────────────── */}
-            <div className="flex items-center gap-0.5 flex-wrap px-2 py-2 border-b border-border bg-surface-0/50 rounded-t-2xl">
-                {/* Headings */}
-                <ToolBtn
-                    onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-                    active={editor.isActive('heading', { level: 1 })}
-                    title="Heading 1"
-                >
-                    H1
-                </ToolBtn>
-                <ToolBtn
-                    onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-                    active={editor.isActive('heading', { level: 2 })}
-                    title="Heading 2"
-                >
-                    H2
-                </ToolBtn>
-                <ToolBtn
-                    onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
-                    active={editor.isActive('heading', { level: 3 })}
-                    title="Heading 3"
-                >
-                    H3
-                </ToolBtn>
+        <div className="tiptap-wrapper relative">
+            {/* ── BUBBLE MENU (Appears on text selection) ── */}
+            {editor && (
+                <BubbleMenu editor={editor} tippyOptions={{ duration: 100 }} className="flex items-center gap-1 bg-surface-1/90 backdrop-blur-xl border border-border shadow-2xl rounded-xl px-2 py-1">
+                    <MenuBtn onClick={() => editor.chain().focus().toggleBold().run()} active={editor.isActive('bold')} title="Bold">
+                        <Bold size={16} />
+                    </MenuBtn>
+                    <MenuBtn onClick={() => editor.chain().focus().toggleItalic().run()} active={editor.isActive('italic')} title="Italic">
+                        <Italic size={16} />
+                    </MenuBtn>
+                    <MenuBtn onClick={() => editor.chain().focus().toggleUnderline().run()} active={editor.isActive('underline')} title="Underline">
+                        <UnderlineIcon size={16} />
+                    </MenuBtn>
+                    <MenuBtn onClick={() => editor.chain().focus().toggleStrike().run()} active={editor.isActive('strike')} title="Strikethrough">
+                        <Strikethrough size={16} />
+                    </MenuBtn>
+                    <div className="w-px h-4 bg-border mx-1" />
+                    <MenuBtn onClick={setLink} active={editor.isActive('link')} title="Link">
+                        <LinkIcon size={16} />
+                    </MenuBtn>
+                    <MenuBtn onClick={() => editor.chain().focus().toggleHighlight().run()} active={editor.isActive('highlight')} title="Highlight">
+                        <Highlighter size={16} />
+                    </MenuBtn>
+                    <div className="w-px h-4 bg-border mx-1" />
+                    <MenuBtn onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} active={editor.isActive('heading', { level: 1 })} title="Heading 1">
+                        <Heading1 size={18} />
+                    </MenuBtn>
+                    <MenuBtn onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} active={editor.isActive('heading', { level: 2 })} title="Heading 2">
+                        <Heading2 size={18} />
+                    </MenuBtn>
+                </BubbleMenu>
+            )}
 
-                <div className="w-px h-5 bg-border mx-1" />
+            {/* ── FLOATING MENU (Appears on empty lines, acts like a slash command palette) ── */}
+            {editor && (
+                <FloatingMenu editor={editor} tippyOptions={{ duration: 100, placement: 'right-start' }} className="flex flex-col gap-1 bg-surface-1/90 backdrop-blur-xl border border-border shadow-2xl rounded-2xl p-2 w-48 animate-in-scale">
+                    <p className="text-[10px] font-mono tracking-widest text-ink-faint uppercase px-2 mb-1">Add Block</p>
+                    <BlockBtn onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} icon={Heading1}>Heading 1</BlockBtn>
+                    <BlockBtn onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} icon={Heading2}>Heading 2</BlockBtn>
+                    <BlockBtn onClick={() => editor.chain().focus().setParagraph().run()} icon={Type} active={editor.isActive('paragraph')}>Text</BlockBtn>
+                    <BlockBtn onClick={() => editor.chain().focus().toggleBulletList().run()} icon={List}>Bullet List</BlockBtn>
+                    <BlockBtn onClick={() => editor.chain().focus().toggleTaskList().run()} icon={ListTodo}>Task List</BlockBtn>
+                    <BlockBtn onClick={() => editor.chain().focus().toggleCodeBlock().run()} icon={Code}>Code Block</BlockBtn>
+                    <BlockBtn onClick={() => editor.chain().focus().toggleBlockquote().run()} icon={Quote}>Quote</BlockBtn>
+                </FloatingMenu>
+            )}
 
-                {/* Formatting */}
-                <ToolBtn
-                    onClick={() => editor.chain().focus().toggleBold().run()}
-                    active={editor.isActive('bold')}
-                    title="Bold (Ctrl+B)"
-                >
-                    <span className="font-bold text-xs">B</span>
-                </ToolBtn>
-                <ToolBtn
-                    onClick={() => editor.chain().focus().toggleItalic().run()}
-                    active={editor.isActive('italic')}
-                    title="Italic (Ctrl+I)"
-                >
-                    <span className="italic text-xs">I</span>
-                </ToolBtn>
-                <ToolBtn
-                    onClick={() => editor.chain().focus().toggleUnderline().run()}
-                    active={editor.isActive('underline')}
-                    title="Underline (Ctrl+U)"
-                >
-                    <span className="underline text-xs">U</span>
-                </ToolBtn>
-                <ToolBtn
-                    onClick={() => editor.chain().focus().toggleStrike().run()}
-                    active={editor.isActive('strike')}
-                    title="Strikethrough"
-                >
-                    <span className="line-through text-xs">S</span>
-                </ToolBtn>
-
-                <div className="w-px h-5 bg-border mx-1" />
-
-                {/* Lists */}
-                <ToolBtn
-                    onClick={() => editor.chain().focus().toggleBulletList().run()}
-                    active={editor.isActive('bulletList')}
-                    title="Bullet List"
-                >
-                    •≡
-                </ToolBtn>
-                <ToolBtn
-                    onClick={() => editor.chain().focus().toggleOrderedList().run()}
-                    active={editor.isActive('orderedList')}
-                    title="Numbered List"
-                >
-                    1.
-                </ToolBtn>
-                <ToolBtn
-                    onClick={() => editor.chain().focus().toggleTaskList().run()}
-                    active={editor.isActive('taskList')}
-                    title="Task List"
-                >
-                    ☑
-                </ToolBtn>
-
-                <div className="w-px h-5 bg-border mx-1" />
-
-                {/* Blocks */}
-                <ToolBtn
-                    onClick={() => editor.chain().focus().toggleBlockquote().run()}
-                    active={editor.isActive('blockquote')}
-                    title="Quote"
-                >
-                    ❝
-                </ToolBtn>
-                <ToolBtn
-                    onClick={() => editor.chain().focus().toggleCodeBlock().run()}
-                    active={editor.isActive('codeBlock')}
-                    title="Code Block"
-                >
-                    {'{ }'}
-                </ToolBtn>
-                <ToolBtn
-                    onClick={() => editor.chain().focus().setHorizontalRule().run()}
-                    title="Divider"
-                >
-                    ─
-                </ToolBtn>
-
-                <div className="w-px h-5 bg-border mx-1" />
-
-                {/* Link + Highlight */}
-                <ToolBtn onClick={setLink} active={editor.isActive('link')} title="Add Link">
-                    🔗
-                </ToolBtn>
-                <ToolBtn
-                    onClick={() => editor.chain().focus().toggleHighlight().run()}
-                    active={editor.isActive('highlight')}
-                    title="Highlight"
-                >
-                    🖍
-                </ToolBtn>
-
-                {/* Undo / Redo — pushed right */}
-                <div className="flex-1" />
-                <ToolBtn
-                    onClick={() => editor.chain().focus().undo().run()}
-                    disabled={!editor.can().undo()}
-                    title="Undo (Ctrl+Z)"
-                >
-                    ↩
-                </ToolBtn>
-                <ToolBtn
-                    onClick={() => editor.chain().focus().redo().run()}
-                    disabled={!editor.can().redo()}
-                    title="Redo (Ctrl+Shift+Z)"
-                >
-                    ↪
-                </ToolBtn>
-            </div>
-
-            {/* ── Editor area ──────────────────────────────────── */}
-            <EditorContent editor={editor} className="px-4 py-3" />
-
-            {/* ── Keyboard shortcuts hint ──────────────────────── */}
-            <div className="px-4 py-2 border-t border-border text-2xs text-ink-ghost">
-                <span>Markdown shortcuts: # heading · **bold** · *italic* · `code` · - list · [] task</span>
-            </div>
+            {/* ── Editor Area ── */}
+            <EditorContent editor={editor} />
         </div>
     )
 }
 
-/** Tiny reusable toolbar button */
-function ToolBtn({ children, onClick, active, disabled, title }) {
+function MenuBtn({ children, onClick, active, title }) {
     return (
         <button
             type="button"
             onClick={onClick}
-            disabled={disabled}
             title={title}
-            className={`
-                flex items-center justify-center w-7 h-7 rounded-lg text-xs
-                transition-all duration-150 select-none
-                ${active
-                    ? 'bg-accent-soft text-accent font-semibold'
-                    : 'text-ink-muted hover:bg-surface-2 hover:text-ink'
-                }
-                ${disabled ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer'}
-            `}
+            className={`p-1.5 rounded-lg transition-colors flex items-center justify-center ${active ? 'bg-accent-soft text-accent' : 'text-ink-muted hover:bg-surface-2 hover:text-ink'}`}
         >
             {children}
+        </button>
+    )
+}
+
+function BlockBtn({ children, onClick, icon: Icon, active }) {
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            className={`flex items-center gap-3 px-3 py-2 text-sm rounded-xl transition-colors ${active ? 'bg-accent-soft text-accent' : 'text-ink-muted hover:bg-surface-2 hover:text-ink'}`}
+        >
+            <Icon size={16} />
+            <span className="font-medium font-sans">{children}</span>
         </button>
     )
 }

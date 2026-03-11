@@ -23,10 +23,7 @@ export default function NoteCreate() {
     }
 
     return (
-        <div className="animate-in max-w-3xl">
-            <button id="back-btn" onClick={() => navigate(-1)} className="btn-ghost text-sm mb-4">
-                ← Back
-            </button>
+        <div className="animate-in max-w-3xl h-full">
             <NoteEditor onSave={handleSave} onCancel={() => navigate(-1)} isSaving={isSaving} />
         </div>
     )

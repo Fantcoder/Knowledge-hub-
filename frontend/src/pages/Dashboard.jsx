@@ -1,9 +1,45 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { motion } from 'framer-motion'
+import { Brain, FileText, Activity, Sparkles } from 'lucide-react'
 import { useNotes } from '../context/NotesContext'
 import NoteGrid from '../components/notes/NoteGrid'
 import TagFilter from '../components/tags/TagFilter'
 import { tagService } from '../services/tagService'
+
+const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+        opacity: 1,
+        transition: { staggerChildren: 0.1 }
+    }
+}
+
+const itemVariants = {
+    hidden: { opacity: 0, y: 15 },
+    show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
+}
+
+function BentoCard({ title, value, subtitle, icon: Icon, className = "", delay = 0 }) {
+    return (
+        <motion.div
+            variants={itemVariants}
+            className={`card p-6 flex flex-col justify-between overflow-hidden relative group backdrop-blur-md bg-surface-1/60 ${className}`}
+        >
+            <div className="absolute -right-6 -top-6 text-ink-ghost/10 group-hover:scale-110 group-hover:-rotate-12 transition-transform duration-500">
+                <Icon size={120} />
+            </div>
+            <div>
+                <div className="flex items-center gap-2 text-ink-muted mb-2 font-mono text-xs uppercase tracking-widest">
+                    <Icon size={14} className="text-accent" />
+                    {title}
+                </div>
+                <div className="font-serif text-4xl text-ink tracking-tight">{value}</div>
+            </div>
+            {subtitle && <div className="text-sm text-ink-faint mt-4">{subtitle}</div>}
+        </motion.div>
+    )
+}
 
 export default function Dashboard() {
     const {
@@ -22,76 +58,103 @@ export default function Dashboard() {
 
     const title = searchQuery ? 'Search results'
         : activeTag ? `#${activeTag}`
-            : { active: 'All notes', archived: 'Archive', deleted: 'Trash', pinned: 'Pinned' }[activeFilter] || 'All notes'
+            : { active: 'Dashboard', archived: 'Archive', deleted: 'Trash', pinned: 'Pinned' }[activeFilter] || 'Dashboard'
 
     return (
-        <div className="animate-in space-y-8">
+        <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="show"
+            className="space-y-8 pb-12"
+        >
             {/* Header */}
-            <div className="flex items-baseline justify-between">
+            <motion.div variants={itemVariants} className="flex items-baseline justify-between">
                 <div>
-                    <h1 className="font-serif text-3xl text-ink">{title}</h1>
+                    <h1 className="font-serif text-4xl md:text-5xl text-ink tracking-tight mb-2">{title}</h1>
                     {searchQuery && (
-                        <p className="text-sm text-ink-faint mt-1">
+                        <p className="text-sm text-ink-faint">
                             for "<span className="text-accent">{searchQuery}</span>"
                         </p>
                     )}
                 </div>
                 {totalElements > 0 && (
-                    <p className="text-xs text-ink-faint">
-                        {totalElements} {totalElements === 1 ? 'note' : 'notes'}
-                    </p>
+                    <div className="px-3 py-1 rounded-full bg-surface-2 text-xs font-medium text-ink-muted shadow-sm">
+                        {totalElements} {totalElements === 1 ? 'record' : 'records'}
+                    </div>
                 )}
-            </div>
+            </motion.div>
+
+            {/* Bento Box Stats (Only on true default dashboard) */}
+            {isDefaultView && !isLoading && (
+                <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                    <BentoCard
+                        title="Total Brain"
+                        value={totalElements}
+                        subtitle="Notes captured"
+                        icon={Brain}
+                        className="md:col-span-1"
+                    />
+                    <BentoCard
+                        title="Organization"
+                        value={tags.length}
+                        subtitle="Active semantic tags"
+                        icon={Sparkles}
+                        className="md:col-span-1"
+                    />
+                    <motion.div
+                        variants={itemVariants}
+                        onClick={() => navigate('/graph')}
+                        className="card p-6 md:col-span-1 border-accent/20 bg-accent-soft hover:bg-accent/10 cursor-pointer flex flex-col items-center justify-center text-center group transition-colors"
+                    >
+                        <Activity className="text-accent mb-3 group-hover:scale-110 transition-transform" size={32} />
+                        <h3 className="font-serif text-xl text-ink">Enter Graph View</h3>
+                        <p className="text-xs text-ink-faint mt-1">Visualize your mind</p>
+                    </motion.div>
+                </motion.div>
+            )}
 
             {/* Tags */}
             {tags.length > 0 && activeFilter === 'active' && !searchQuery && (
-                <TagFilter tags={tags} />
+                <motion.div variants={itemVariants}>
+                    <TagFilter tags={tags} />
+                </motion.div>
             )}
 
             {/* Pinned */}
             {displayedPinned.length > 0 && (
-                <section>
-                    <p className="label mb-3">pinned</p>
+                <motion.section variants={itemVariants}>
+                    <div className="flex items-center gap-2 mb-4">
+                        <div className="w-2 h-2 rounded-full bg-accent animate-pulse-soft" />
+                        <p className="label !mb-0">pinned thoughts</p>
+                    </div>
                     <NoteGrid notes={displayedPinned} />
-                </section>
+                </motion.section>
             )}
 
             {/* Notes */}
-            <section>
+            <motion.section variants={itemVariants}>
                 {displayedPinned.length > 0 && (
-                    <p className="label mb-3">recent</p>
+                    <p className="label mb-4 mt-8">recent activity</p>
                 )}
                 <NoteGrid
                     notes={displayedRecent}
                     emptyTitle={activeFilter === 'active' ? 'A blank page' : activeFilter === 'archived' ? 'Nothing archived' : 'Empty'}
                     emptyDescription={activeFilter === 'active' ? 'Start writing. Your first note is one click away.' : ''}
                 />
-            </section>
+            </motion.section>
 
             {/* Load More */}
             {hasMore && (
-                <div className="flex justify-center pt-4 pb-8">
+                <motion.div variants={itemVariants} className="flex justify-center pt-8">
                     <button
                         onClick={loadMore}
                         disabled={isLoading}
-                        className="px-6 py-2.5 rounded-xl bg-surface-2 text-ink-muted 
-                                   hover:bg-surface-3 hover:text-ink transition-all duration-200 
-                                   text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="btn-secondary rounded-full px-8 py-3 shadow-sm hover:shadow-md"
                     >
-                        {isLoading ? (
-                            <span className="flex items-center gap-2">
-                                <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                                </svg>
-                                Loading...
-                            </span>
-                        ) : (
-                            'Load more notes'
-                        )}
+                        {isLoading ? 'Loading deep thoughts...' : 'Dive deeper'}
                     </button>
-                </div>
+                </motion.div>
             )}
-        </div>
+        </motion.div>
     )
 }
