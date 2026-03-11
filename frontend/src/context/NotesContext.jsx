@@ -1,5 +1,6 @@
 import { createContext, useContext, useReducer, useCallback, useRef } from 'react'
 import { noteService } from '../services/noteService'
+import { cacheNotes, getCachedNotes } from '../services/db'
 import toast from 'react-hot-toast'
 
 const NotesContext = createContext(null)
@@ -98,15 +99,40 @@ export function NotesProvider({ children }) {
     const fetchNotes = useCallback(async (filter, tag, page = 0) => {
         const currentId = ++fetchRequestId.current
         dispatch({ type: 'SET_LOADING', payload: true })
+
         try {
+            // Offline-First: Try getting cached notes first (instant load)
+            if (page === 0 && !filter && !tag) {
+                const cached = await getCachedNotes()
+                if (cached && cached.length > 0) {
+                    dispatch({
+                        type: 'SET_NOTES',
+                        payload: {
+                            content: cached.sort((a, b) => new Date(b.updatedAt || 0).getTime() < new Date(a.updatedAt || 0).getTime() ? 1 : -1).slice(0, 20),
+                            totalPages: 1,
+                            totalElements: cached.length,
+                            last: false,
+                            number: 0,
+                        }
+                    })
+                }
+            }
+
             const params = { page, size: 20 }
             if (filter && filter !== 'active') params.filter = filter
             if (tag) params.tag = tag
+
             const res = await noteService.getAll(params)
             if (currentId !== fetchRequestId.current) return
 
             // Spring Page object is in res.data.data
             const pageData = res.data.data
+
+            // Sync fresh data to offline cache
+            if (page === 0 && !filter && !tag && pageData?.content) {
+                cacheNotes(pageData.content)
+            }
+
             if (pageData && pageData.content !== undefined) {
                 dispatch({
                     type: page === 0 ? 'SET_NOTES' : 'APPEND_NOTES',
@@ -128,7 +154,10 @@ export function NotesProvider({ children }) {
         } catch (err) {
             if (currentId !== fetchRequestId.current) return
             dispatch({ type: 'SET_LOADING', payload: false })
-            toast.error('Failed to load notes')
+            // If offline, don't show error if we already loaded from cache
+            if (err.code !== 'ERR_NETWORK') {
+                toast.error('Failed to sync latest notes')
+            }
         }
     }, [])
 
