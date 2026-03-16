@@ -1,170 +1,273 @@
-# KnowledgeHub — Personal Knowledge Management App
+<p align="center">
+  <img src="https://img.shields.io/badge/React_18-61DAFB?style=for-the-badge&logo=react&logoColor=black" />
+  <img src="https://img.shields.io/badge/Spring_Boot_3-6DB33F?style=for-the-badge&logo=springboot&logoColor=white" />
+  <img src="https://img.shields.io/badge/MySQL_8-4479A1?style=for-the-badge&logo=mysql&logoColor=white" />
+  <img src="https://img.shields.io/badge/Groq_AI-000000?style=for-the-badge&logo=openai&logoColor=white" />
+  <img src="https://img.shields.io/badge/PWA-5A0FC8?style=for-the-badge&logo=pwa&logoColor=white" />
+</p>
 
-A full-stack, production-ready personal knowledge management application. Capture notes with a rich text editor, save links, upload files, tag & organize content, and search everything — all behind secure JWT authentication.
+<h1 align="center">Knowledge Hub</h1>
+<p align="center">
+  <strong>A secure, AI-powered personal knowledge management system.</strong><br/>
+  Capture notes, manage files, save links, visualize connections — all from a single interface.
+</p>
+
+<p align="center">
+  <a href="#features">Features</a> •
+  <a href="#tech-stack">Tech Stack</a> •
+  <a href="#architecture">Architecture</a> •
+  <a href="#getting-started">Getting Started</a> •
+  <a href="#api-reference">API</a> •
+  <a href="#deployment">Deployment</a>
+</p>
 
 ---
 
-## 🏗️ Tech Stack
+## Features
 
-| Layer | Technology |
-|-------|-----------|
-| Frontend | React 18 + Vite, Tailwind CSS v3, React Router v6, Axios, React Quill |
-| Backend | Spring Boot 3.2, Spring Security 6, Spring Data JPA |
-| Auth | JWT (jjwt 0.12.x) — access + refresh tokens |
-| Database | MySQL 8+ |
-| Build | Maven (backend), npm (frontend) |
+| Category | Details |
+|----------|---------|
+| **Rich Text Editor** | Tiptap-based Notion-style editor with slash commands, floating menus, bubble menus, Markdown shortcuts, code blocks with syntax highlighting, task lists |
+| **AI Assistant** | Groq-powered AI brain (LLaMA 3.3 70B) — ask questions about your notes, get context-aware answers with source citations |
+| **Knowledge Graph** | Interactive force-directed graph visualization of notes and tags using D3 |
+| **Offline-First** | PWA with Service Worker caching + IndexedDB (Dexie) for instant load and offline access |
+| **Quick Capture** | `Ctrl+Shift+K` instant capture modal — dump thoughts without leaving your current page |
+| **Command Palette** | `Ctrl+K` global search and navigation — jump anywhere in the app instantly |
+| **Zen Focus Mode** | Fullscreen distraction-free writing environment with animated transitions |
+| **File Management** | Upload, preview, and attach files (PDF, DOCX, images) to notes |
+| **Link Vault** | Save, categorize, and manage web links with auto-metadata extraction |
+| **Tagging System** | Create, assign, and filter notes by tags — reflected across sidebar, graph, and search |
+| **Google OAuth** | One-click sign in with Google alongside email/password auth |
+| **Data Export** | Export all notes and data in JSON/Markdown format |
 
 ---
 
-## 📋 Prerequisites
+## Tech Stack
+
+### Frontend
+
+| Tool | Purpose |
+|------|---------|
+| React 18 + Vite | UI framework + build tooling |
+| Tailwind CSS 3 | Utility-first styling with custom design tokens |
+| Tiptap 3 | Extensible block editor (replaces React Quill) |
+| Framer Motion | Page transitions and Zen Mode animation |
+| React Force Graph 2D | Knowledge graph visualization |
+| Dexie.js | IndexedDB wrapper for offline caching |
+| Vite PWA Plugin | Service Worker generation for offline-first |
+| cmdk | Command palette UI |
+| React Virtuoso | Virtualized note list rendering |
+| Lucide React | Icon system |
+
+### Backend
+
+| Tool | Purpose |
+|------|---------|
+| Spring Boot 3.2 | REST API framework |
+| Spring Security 6 | Authentication and authorization |
+| Spring Data JPA | ORM and database access |
+| MySQL 8 | Primary data store |
+| Flyway | Database schema migrations |
+| Caffeine | In-memory caching layer |
+| JWT (jjwt 0.12) | Stateless auth with access + refresh tokens |
+| Spring WebFlux | Async HTTP client for AI API calls |
+| Jsoup | HTML sanitization for note content |
+| Groq API | LLM inference (LLaMA 3.3 70B) |
+| Google API Client | Server-side Google OAuth verification |
+
+---
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────┐
+│                   Frontend (React)               │
+│                                                  │
+│  ┌──────────┐  ┌──────────┐  ┌───────────────┐  │
+│  │ Tiptap   │  │ Graph    │  │ AI Chat Panel │  │
+│  │ Editor   │  │ (D3)     │  │ (Streaming)   │  │
+│  └──────────┘  └──────────┘  └───────────────┘  │
+│                                                  │
+│  ┌──────────────────────────────────────────┐    │
+│  │ IndexedDB (Dexie) + Service Worker (PWA) │    │
+│  └──────────────────────────────────────────┘    │
+└──────────────────┬──────────────────────────────┘
+                   │ HTTPS / REST
+┌──────────────────▼──────────────────────────────┐
+│              Backend (Spring Boot)               │
+│                                                  │
+│  ┌────────────┐  ┌──────────┐  ┌─────────────┐  │
+│  │ Auth       │  │ Notes    │  │ AI Service  │  │
+│  │ (JWT+OAuth)│  │ CRUD     │  │ (Groq API)  │  │
+│  └────────────┘  └──────────┘  └─────────────┘  │
+│                                                  │
+│  ┌────────────┐  ┌──────────┐  ┌─────────────┐  │
+│  │ Files      │  │ Links    │  │ Graph       │  │
+│  │ Upload     │  │ Manager  │  │ Service     │  │
+│  └────────────┘  └──────────┘  └─────────────┘  │
+│                                                  │
+│  ┌──────────────────────────────────────────┐    │
+│  │ MySQL 8 + Flyway + Caffeine Cache       │    │
+│  └──────────────────────────────────────────┘    │
+└──────────────────────────────────────────────────┘
+```
+
+---
+
+## Getting Started
+
+### Prerequisites
 
 - Java 17+
 - Maven 3.8+
-- Node.js 18+ and npm 9+
+- Node.js 18+
 - MySQL 8+
 
----
-
-## 🚀 Local Setup
-
-### 1. Database
+### 1. Clone
 
 ```bash
-# Login to MySQL
-mysql -u root -p
-
-# Run the schema
-source /path/to/backend/schema.sql
+git clone https://github.com/Fantcoder/Knowledge-hub-.git
+cd Knowledge-hub-
 ```
 
-### 2. Backend
+### 2. Backend Setup
 
 ```bash
 cd backend
 
-# Copy and configure environment
+# Configure environment
 cp .env.example .env
-# Edit .env with your MySQL password and JWT secret
-
-# Set environment variables (Windows PowerShell)
-$env:SPRING_DATASOURCE_PASSWORD="yourpassword"
-$env:JWT_SECRET="your-base64-secret"
-
-# Run
-mvn spring-boot:run
+# Set: SPRING_DATASOURCE_PASSWORD, JWT_SECRET, GROQ_API_KEY
 ```
 
-Backend starts at: `http://localhost:8080`
-
-### 3. Frontend
-
-```bash
-cd frontend
-
-# Install dependencies
-npm install
-
-# Start dev server
-npm run dev
-```
-
-Frontend starts at: `http://localhost:5173`
-
----
-
-## 🔐 Environment Variables
-
-### Backend (`application.properties` placeholders)
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `SPRING_DATASOURCE_URL` | MySQL JDBC URL | `jdbc:mysql://localhost:3306/knowledgehub` |
-| `SPRING_DATASOURCE_USERNAME` | MySQL username | `root` |
-| `SPRING_DATASOURCE_PASSWORD` | MySQL password | *(required)* |
-| `JWT_SECRET` | 256-bit Base64 secret | *(required)* |
-| `JWT_ACCESS_EXPIRATION` | Access token TTL (ms) | `900000` (15 min) |
-| `JWT_REFRESH_EXPIRATION` | Refresh token TTL (ms) | `604800000` (7 days) |
-| `FILE_UPLOAD_DIR` | Upload directory | `./uploads` |
-| `FRONTEND_URL` | Allowed CORS origin | `http://localhost:5173` |
-
-**Generate JWT secret:**
+**Generate a JWT secret:**
 ```bash
 node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 ```
 
-### Frontend (`.env`)
+```bash
+mvn spring-boot:run
+# → http://localhost:8080
+```
 
-| Variable | Description |
-|----------|-------------|
-| `VITE_API_BASE_URL` | Backend API base URL |
+### 3. Frontend Setup
+
+```bash
+cd frontend
+npm install
+npm run dev
+# → http://localhost:5173
+```
+
+### Environment Variables
+
+**Backend** (`application.properties`)
+
+| Variable | Required | Default |
+|----------|----------|---------|
+| `SPRING_DATASOURCE_URL` | No | `jdbc:mysql://localhost:3306/knowledgehub` |
+| `SPRING_DATASOURCE_PASSWORD` | **Yes** | — |
+| `JWT_SECRET` | **Yes** | — |
+| `GROQ_API_KEY` | **Yes** | — |
+| `FRONTEND_URL` | No | `http://localhost:5173` |
+| `FILE_UPLOAD_DIR` | No | `./uploads` |
+
+**Frontend** (`.env`)
+
+| Variable | Required | Default |
+|----------|----------|---------|
+| `VITE_API_BASE_URL` | No | `/api` |
+| `VITE_GOOGLE_CLIENT_ID` | No | — |
 
 ---
 
-## 🌐 API Overview
+## API Reference
 
 ### Auth
 ```
-POST /api/auth/register    — Create account
-POST /api/auth/login       — Get tokens
-POST /api/auth/refresh     — Refresh access token
-POST /api/auth/logout      — Invalidate session
+POST   /api/auth/register       Register
+POST   /api/auth/login          Login → tokens
+POST   /api/auth/google         Google OAuth
+POST   /api/auth/refresh        Refresh access token
+POST   /api/auth/logout         Invalidate session
 ```
 
 ### Notes
 ```
-GET    /api/notes              — List notes (filter: active/archived/deleted/pinned, tag)
-POST   /api/notes              — Create note
-GET    /api/notes/{id}         — Get note
-PUT    /api/notes/{id}         — Update note
-DELETE /api/notes/{id}         — Soft delete
-PATCH  /api/notes/{id}/pin     — Toggle pin
-PATCH  /api/notes/{id}/archive — Toggle archive
-PATCH  /api/notes/{id}/restore — Restore from trash
-DELETE /api/notes/{id}/permanent — Hard delete
-GET    /api/notes/search?q=&tag= — Full-text search
+GET    /api/notes               List (filter, tag, pagination)
+POST   /api/notes               Create
+GET    /api/notes/:id           Read
+PUT    /api/notes/:id           Update
+DELETE /api/notes/:id           Soft delete
+PATCH  /api/notes/:id/pin       Toggle pin
+PATCH  /api/notes/:id/archive   Toggle archive
+PATCH  /api/notes/:id/restore   Restore from trash
+DELETE /api/notes/:id/permanent Hard delete
+GET    /api/notes/search        Full-text search (?q=&tag=)
 ```
 
 ### Files
 ```
-POST /api/files/upload              — Upload file (multipart)
-GET  /api/files/{id}/download       — Download file
-GET  /api/files                     — List user files
-DELETE /api/files/{id}              — Delete file
+POST   /api/files/upload        Upload (multipart, ≤10MB)
+GET    /api/files/:id/download  Download
+GET    /api/files               List
+DELETE /api/files/:id           Delete
 ```
 
-### Links / Tags
+### Links · Tags · Graph · AI · Export
 ```
-GET/POST/PUT/DELETE /api/links
-GET/POST/DELETE     /api/tags
+CRUD   /api/links               Saved links management
+CRUD   /api/tags                Tag management
+GET    /api/graph               Knowledge graph data
+POST   /api/ai/chat             AI conversation
+GET    /api/export              Export all user data
 ```
 
 ---
 
-## 🚢 Deployment
+## Deployment
 
-See [DEPLOYMENT.md](DEPLOYMENT.md) for step-by-step Vercel + Render deployment.
+| Service | Platform |
+|---------|----------|
+| Frontend | [Vercel](https://vercel.com) |
+| Backend | [Render](https://render.com) |
+| Database | [Railway](https://railway.app) (MySQL) |
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed instructions.
 
 ---
 
-## 🔧 Troubleshooting
+## Project Structure
 
-### Backend won't start
-- Check MySQL is running and `knowledgehub` database exists
-- Verify `SPRING_DATASOURCE_PASSWORD` is set correctly
-- Ensure Java 17+ is installed: `java -version`
+```
+├── backend/
+│   └── src/main/java/com/knowledgehub/
+│       ├── ai/              # AI chat service + Groq integration
+│       ├── config/          # Security, CORS, caching config
+│       ├── controller/      # REST endpoints
+│       ├── dto/             # Request/response objects
+│       ├── entity/          # JPA entities
+│       ├── exception/       # Global error handling
+│       ├── repository/      # Data access layer
+│       ├── security/        # JWT filter, auth providers
+│       └── service/         # Business logic
+│
+├── frontend/
+│   └── src/
+│       ├── components/      # UI components
+│       │   ├── ai/          # AI chat panel
+│       │   ├── editor/      # Tiptap block editor
+│       │   ├── layout/      # Sidebar, TopBar
+│       │   ├── notes/       # NoteCard, NoteGrid, NoteEditor
+│       │   └── common/      # CommandPalette, ErrorBoundary
+│       ├── context/         # Auth + Notes state management
+│       ├── pages/           # Route-level page components
+│       ├── services/        # API clients + IndexedDB
+│       └── hooks/           # Custom React hooks
+```
 
-### Frontend can't reach backend
-- Confirm backend is running on port 8080
-- Check `VITE_API_BASE_URL` in `frontend/.env`
-- Verify `FRONTEND_URL` in backend matches the frontend URL exactly
+---
 
-### JWT errors
-- Regenerate `JWT_SECRET` (must be Base64-encoded, 32+ bytes)
-- Clear browser localStorage if tokens are stale
+## License
 
-### File upload fails
-- Check `./uploads` directory exists and is writable
-- File must be ≤ 10MB and one of: PDF, DOCX, PNG, JPG, WEBP, TXT
-
-### CORS errors
-- `FRONTEND_URL` in backend must exactly match the frontend origin (including port)
+This project is private and not licensed for redistribution.
