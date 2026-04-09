@@ -11,7 +11,8 @@
 }
 
 .tiptap-divider {
-    @apply w-px h-5 bg-border/70 mx-1 flex-shrink-0;
+    @apply w-px h-5 mx-1 flex-shrink-0;
+    background: var(--border);
 }
 
 /* Content area padding */
