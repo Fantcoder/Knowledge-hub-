@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import TiptapEditor from '../editor/TiptapEditor'
-import '../editor/tiptap.css'
 import { tagService } from '../../services/tagService'
 import { Maximize2, Minimize2, ArrowLeft } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'

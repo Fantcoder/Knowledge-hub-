@@ -4,6 +4,21 @@
     @apply bg-surface-1 border border-border rounded-2xl overflow-hidden;
 }
 
+/* ── Fixed formatting toolbar ── */
+.tiptap-toolbar {
+    @apply flex items-center flex-wrap gap-1 px-3 py-2
+           border-b border-border bg-surface-2/60 backdrop-blur-sm;
+}
+
+.tiptap-divider {
+    @apply w-px h-5 bg-border/70 mx-1 flex-shrink-0;
+}
+
+/* Content area padding */
+.tiptap-content-area {
+    @apply px-4 py-4;
+}
+
 /* Core editor */
 .tiptap {
     @apply outline-none;
