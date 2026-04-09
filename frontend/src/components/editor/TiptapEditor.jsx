@@ -1,4 +1,5 @@
-import { useEditor, EditorContent, BubbleMenu } from '@tiptap/react'
+import { useEditor, EditorContent } from '@tiptap/react'
+import { BubbleMenu } from '@tiptap/react/menus'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
 import Link from '@tiptap/extension-link'
@@ -72,150 +73,115 @@ export default function TiptapEditor({ content, onChange, placeholder = 'Start w
 
     return (
         <div className="tiptap-wrapper">
-            {/* ── FIXED TOOLBAR ── always visible above editor */}
+
+            {/* ── FIXED TOOLBAR — always visible above the editor ── */}
             {editable && (
                 <div className="tiptap-toolbar">
-                    {/* Block type group */}
-                    <ToolbarGroup label="Block">
-                        <ToolBtn
-                            onClick={() => editor.chain().focus().setParagraph().run()}
-                            active={editor.isActive('paragraph')}
-                            title="Paragraph"
-                        >
-                            <Type size={15} />
-                        </ToolBtn>
-                        <ToolBtn
-                            onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-                            active={editor.isActive('heading', { level: 1 })}
-                            title="Heading 1"
-                        >
-                            <Heading1 size={16} />
-                        </ToolBtn>
-                        <ToolBtn
-                            onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-                            active={editor.isActive('heading', { level: 2 })}
-                            title="Heading 2"
-                        >
-                            <Heading2 size={16} />
-                        </ToolBtn>
-                        <ToolBtn
-                            onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
-                            active={editor.isActive('heading', { level: 3 })}
-                            title="Heading 3"
-                        >
-                            <Heading3 size={16} />
-                        </ToolBtn>
-                    </ToolbarGroup>
+
+                    {/* Block Type */}
+                    <ToolBtn
+                        onClick={() => editor.chain().focus().setParagraph().run()}
+                        active={editor.isActive('paragraph')}
+                        title="Paragraph"
+                    ><Type size={15} /></ToolBtn>
+                    <ToolBtn
+                        onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+                        active={editor.isActive('heading', { level: 1 })}
+                        title="Heading 1"
+                    ><Heading1 size={16} /></ToolBtn>
+                    <ToolBtn
+                        onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+                        active={editor.isActive('heading', { level: 2 })}
+                        title="Heading 2"
+                    ><Heading2 size={16} /></ToolBtn>
+                    <ToolBtn
+                        onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+                        active={editor.isActive('heading', { level: 3 })}
+                        title="Heading 3"
+                    ><Heading3 size={16} /></ToolBtn>
 
                     <div className="tiptap-divider" />
 
-                    {/* Inline formatting group */}
-                    <ToolbarGroup label="Format">
-                        <ToolBtn
-                            onClick={() => editor.chain().focus().toggleBold().run()}
-                            active={editor.isActive('bold')}
-                            title="Bold (Ctrl+B)"
-                        >
-                            <Bold size={15} />
-                        </ToolBtn>
-                        <ToolBtn
-                            onClick={() => editor.chain().focus().toggleItalic().run()}
-                            active={editor.isActive('italic')}
-                            title="Italic (Ctrl+I)"
-                        >
-                            <Italic size={15} />
-                        </ToolBtn>
-                        <ToolBtn
-                            onClick={() => editor.chain().focus().toggleUnderline().run()}
-                            active={editor.isActive('underline')}
-                            title="Underline (Ctrl+U)"
-                        >
-                            <UnderlineIcon size={15} />
-                        </ToolBtn>
-                        <ToolBtn
-                            onClick={() => editor.chain().focus().toggleStrike().run()}
-                            active={editor.isActive('strike')}
-                            title="Strikethrough"
-                        >
-                            <Strikethrough size={15} />
-                        </ToolBtn>
-                        <ToolBtn
-                            onClick={() => editor.chain().focus().toggleHighlight().run()}
-                            active={editor.isActive('highlight')}
-                            title="Highlight"
-                        >
-                            <Highlighter size={15} />
-                        </ToolBtn>
-                        <ToolBtn
-                            onClick={setLink}
-                            active={editor.isActive('link')}
-                            title="Link"
-                        >
-                            <LinkIcon size={15} />
-                        </ToolBtn>
-                    </ToolbarGroup>
+                    {/* Inline Formatting */}
+                    <ToolBtn
+                        onClick={() => editor.chain().focus().toggleBold().run()}
+                        active={editor.isActive('bold')}
+                        title="Bold (Ctrl+B)"
+                    ><Bold size={15} /></ToolBtn>
+                    <ToolBtn
+                        onClick={() => editor.chain().focus().toggleItalic().run()}
+                        active={editor.isActive('italic')}
+                        title="Italic (Ctrl+I)"
+                    ><Italic size={15} /></ToolBtn>
+                    <ToolBtn
+                        onClick={() => editor.chain().focus().toggleUnderline().run()}
+                        active={editor.isActive('underline')}
+                        title="Underline (Ctrl+U)"
+                    ><UnderlineIcon size={15} /></ToolBtn>
+                    <ToolBtn
+                        onClick={() => editor.chain().focus().toggleStrike().run()}
+                        active={editor.isActive('strike')}
+                        title="Strikethrough"
+                    ><Strikethrough size={15} /></ToolBtn>
+                    <ToolBtn
+                        onClick={() => editor.chain().focus().toggleHighlight().run()}
+                        active={editor.isActive('highlight')}
+                        title="Highlight"
+                    ><Highlighter size={15} /></ToolBtn>
+                    <ToolBtn
+                        onClick={setLink}
+                        active={editor.isActive('link')}
+                        title="Link"
+                    ><LinkIcon size={15} /></ToolBtn>
 
                     <div className="tiptap-divider" />
 
-                    {/* List & block group */}
-                    <ToolbarGroup label="Insert">
-                        <ToolBtn
-                            onClick={() => editor.chain().focus().toggleBulletList().run()}
-                            active={editor.isActive('bulletList')}
-                            title="Bullet List"
-                        >
-                            <List size={15} />
-                        </ToolBtn>
-                        <ToolBtn
-                            onClick={() => editor.chain().focus().toggleOrderedList().run()}
-                            active={editor.isActive('orderedList')}
-                            title="Numbered List"
-                        >
-                            <ListOrdered size={15} />
-                        </ToolBtn>
-                        <ToolBtn
-                            onClick={() => editor.chain().focus().toggleTaskList().run()}
-                            active={editor.isActive('taskList')}
-                            title="Task List"
-                        >
-                            <ListTodo size={15} />
-                        </ToolBtn>
-                        <ToolBtn
-                            onClick={() => editor.chain().focus().toggleCodeBlock().run()}
-                            active={editor.isActive('codeBlock')}
-                            title="Code Block"
-                        >
-                            <Code size={15} />
-                        </ToolBtn>
-                        <ToolBtn
-                            onClick={() => editor.chain().focus().toggleBlockquote().run()}
-                            active={editor.isActive('blockquote')}
-                            title="Quote"
-                        >
-                            <Quote size={15} />
-                        </ToolBtn>
-                        <ToolBtn
-                            onClick={() => editor.chain().focus().setHorizontalRule().run()}
-                            title="Divider"
-                        >
-                            <Minus size={15} />
-                        </ToolBtn>
-                    </ToolbarGroup>
+                    {/* Lists & Blocks */}
+                    <ToolBtn
+                        onClick={() => editor.chain().focus().toggleBulletList().run()}
+                        active={editor.isActive('bulletList')}
+                        title="Bullet List"
+                    ><List size={15} /></ToolBtn>
+                    <ToolBtn
+                        onClick={() => editor.chain().focus().toggleOrderedList().run()}
+                        active={editor.isActive('orderedList')}
+                        title="Numbered List"
+                    ><ListOrdered size={15} /></ToolBtn>
+                    <ToolBtn
+                        onClick={() => editor.chain().focus().toggleTaskList().run()}
+                        active={editor.isActive('taskList')}
+                        title="Task List"
+                    ><ListTodo size={15} /></ToolBtn>
+                    <ToolBtn
+                        onClick={() => editor.chain().focus().toggleCodeBlock().run()}
+                        active={editor.isActive('codeBlock')}
+                        title="Code Block"
+                    ><Code size={15} /></ToolBtn>
+                    <ToolBtn
+                        onClick={() => editor.chain().focus().toggleBlockquote().run()}
+                        active={editor.isActive('blockquote')}
+                        title="Quote"
+                    ><Quote size={15} /></ToolBtn>
+                    <ToolBtn
+                        onClick={() => editor.chain().focus().setHorizontalRule().run()}
+                        title="Divider"
+                    ><Minus size={15} /></ToolBtn>
+
                 </div>
             )}
 
-            {/* ── BUBBLE MENU — appears on text selection for quick inline formatting ── */}
+            {/* ── BUBBLE MENU — inline toolbar on text selection ── */}
             {editor && (
                 <BubbleMenu
                     editor={editor}
                     tippyOptions={{ duration: 80 }}
-                    className="flex items-center gap-0.5 bg-surface-0/95 backdrop-blur-xl border border-border shadow-2xl rounded-xl px-1.5 py-1"
+                    className="bubble-menu"
                 >
                     <ToolBtn onClick={() => editor.chain().focus().toggleBold().run()} active={editor.isActive('bold')} title="Bold"><Bold size={14} /></ToolBtn>
                     <ToolBtn onClick={() => editor.chain().focus().toggleItalic().run()} active={editor.isActive('italic')} title="Italic"><Italic size={14} /></ToolBtn>
                     <ToolBtn onClick={() => editor.chain().focus().toggleUnderline().run()} active={editor.isActive('underline')} title="Underline"><UnderlineIcon size={14} /></ToolBtn>
                     <ToolBtn onClick={() => editor.chain().focus().toggleStrike().run()} active={editor.isActive('strike')} title="Strike"><Strikethrough size={14} /></ToolBtn>
-                    <div className="w-px h-3.5 bg-border mx-0.5" />
+                    <div className="tiptap-divider" style={{ height: '14px' }} />
                     <ToolBtn onClick={setLink} active={editor.isActive('link')} title="Link"><LinkIcon size={14} /></ToolBtn>
                     <ToolBtn onClick={() => editor.chain().focus().toggleHighlight().run()} active={editor.isActive('highlight')} title="Highlight"><Highlighter size={14} /></ToolBtn>
                 </BubbleMenu>
@@ -229,30 +195,16 @@ export default function TiptapEditor({ content, onChange, placeholder = 'Start w
     )
 }
 
-function ToolbarGroup({ children }) {
-    return (
-        <div className="flex items-center gap-0.5">
-            {children}
-        </div>
-    )
-}
-
 function ToolBtn({ children, onClick, active, title }) {
     return (
         <button
             type="button"
             onMouseDown={(e) => {
-                e.preventDefault() // prevent editor losing focus
+                e.preventDefault() // keep editor focused
                 onClick()
             }}
             title={title}
-            className={`
-                p-2 rounded-lg transition-all duration-150 flex items-center justify-center
-                ${active
-                    ? 'bg-accent text-accent-ink shadow-sm'
-                    : 'text-ink-muted hover:bg-surface-2 hover:text-ink'
-                }
-            `}
+            className={`tiptap-tool-btn ${active ? 'active' : ''}`}
         >
             {children}
         </button>

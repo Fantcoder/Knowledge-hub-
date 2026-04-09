@@ -20,6 +20,28 @@
     @apply px-4 py-4;
 }
 
+/* ── Toolbar button ── */
+.tiptap-tool-btn {
+    @apply p-2 rounded-lg transition-all flex items-center justify-center;
+    color: var(--ink-muted);
+}
+.tiptap-tool-btn:hover {
+    background: var(--surface-2);
+    color: var(--ink);
+}
+.tiptap-tool-btn.active {
+    background: var(--accent);
+    color: var(--accent-ink);
+}
+
+/* ── Bubble menu (selection popup) ── */
+.bubble-menu {
+    @apply flex items-center gap-0.5 rounded-xl px-1.5 py-1;
+    background: var(--surface-0);
+    border: 1px solid var(--border);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.16);
+}
+
 /* Core editor */
 .tiptap {
     @apply outline-none;
