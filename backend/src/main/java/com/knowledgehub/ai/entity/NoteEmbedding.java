@@ -23,20 +23,20 @@ public class NoteEmbedding {
     @JoinColumn(name = "note_id", nullable = false, unique = true)
     private Note note;
 
-    // Store as comma-separated floats in TEXT column (MySQL JSON alternative)
-    @Column(name = "embedding_vector", nullable = false, columnDefinition = "LONGTEXT")
+    // Store as comma-separated floats in TEXT column (PostgreSQL TEXT = unlimited)
+    @Column(name = "embedding_vector", nullable = false, columnDefinition = "TEXT")
     private String embeddingVector;
 
     @Column(name = "embedding_model", length = 50)
     @Builder.Default
-    private String embeddingModel = "text-embedding-3-small";
+    private String embeddingModel = "local-feature-hash-v1";
 
     @Column(name = "content_hash", length = 64)
     private String contentHash;
 
     @Column(name = "vector_dimension")
     @Builder.Default
-    private Integer vectorDimension = 1536;
+    private Integer vectorDimension = 512;
 
     @Column(name = "created_at")
     @Builder.Default

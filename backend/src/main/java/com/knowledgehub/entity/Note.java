@@ -27,11 +27,10 @@ public class Note {
     @Column(nullable = false, length = 255)
     private String title;
 
-    @Lob
-    @Column(columnDefinition = "LONGTEXT")
+    @Column(columnDefinition = "TEXT")
     private String content;
 
-    @Column(name = "content_preview", length = 500)
+    @Column(name = "content_preview")
     private String contentPreview;
 
     @Column(name = "is_pinned")
