@@ -20,7 +20,7 @@ const ListContainer = forwardRef((props, ref) => (
 ))
 
 export default function NoteGrid({ notes, emptyTitle, emptyDescription }) {
-    const { isLoading, viewMode, togglePin, toggleArchive, deleteNote } = useNotes()
+    const { isLoading, viewMode, togglePin, toggleArchive, deleteNote, loadMore } = useNotes()
     const navigate = useNavigate()
 
     if (isLoading) {
@@ -60,6 +60,7 @@ export default function NoteGrid({ notes, emptyTitle, emptyDescription }) {
                 key={viewMode} // Re-mount when changing views
                 useWindowScroll
                 data={notes}
+                endReached={loadMore}
                 components={{
                     List: GridList,
                     Item: GridItem
@@ -76,6 +77,7 @@ export default function NoteGrid({ notes, emptyTitle, emptyDescription }) {
             key={viewMode} // Re-mount when changing views
             useWindowScroll
             data={notes}
+            endReached={loadMore}
             components={{
                 List: ListContainer
             }}

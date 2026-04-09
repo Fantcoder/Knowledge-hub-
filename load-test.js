@@ -16,7 +16,7 @@ import { check, sleep, group } from 'k6'
 import { Rate, Trend, Counter } from 'k6/metrics'
 
 // ── Config ──────────────────────────────────────────────────
-const BASE_URL = __ENV.BASE_URL || 'https://your-render-app.onrender.com/api'
+const BASE_URL = __ENV.BASE_URL || 'https://knowledge-hub-mzdd.onrender.com/api'
 
 // Replace this with a real JWT token from your app
 // Log in once manually, copy the token from localStorage -> accessToken
