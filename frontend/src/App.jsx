@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
-import { AuthProvider } from './context/AuthContext'
+import { AuthProvider, useAuth } from './context/AuthContext'
 import { NotesProvider } from './context/NotesContext'
 import ErrorBoundary from './components/common/ErrorBoundary'
 import ProtectedRoute from './components/common/ProtectedRoute'
@@ -10,6 +10,7 @@ import { Suspense, lazy } from 'react'
 
 const QuickCapture = lazy(() => import('./components/capture/QuickCapture'))
 const AiChatPanel = lazy(() => import('./components/ai/AiChatPanel'))
+const Landing = lazy(() => import('./pages/Landing'))
 const Login = lazy(() => import('./pages/Login'))
 const Register = lazy(() => import('./pages/Register'))
 const Dashboard = lazy(() => import('./pages/Dashboard'))
@@ -30,12 +31,14 @@ const PageLoader = () => (
     </div>
 )
 
-export default function App() {
+function GlobalOverlays() {
+    const { isAuthenticated } = useAuth()
     const [quickCaptureOpen, setQuickCaptureOpen] = useState(false)
     const [aiChatOpen, setAiChatOpen] = useState(false)
 
     // Global keyboard shortcut: Ctrl+Shift+K → Quick Capture
     const handleGlobalShortcuts = useCallback((e) => {
+        if (!isAuthenticated) return;
         if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'k') {
             e.preventDefault()
             setQuickCaptureOpen(prev => !prev)
@@ -44,12 +47,45 @@ export default function App() {
             e.preventDefault()
             setAiChatOpen(prev => !prev)
         }
-    }, [])
+    }, [isAuthenticated])
 
     useEffect(() => {
         window.addEventListener('keydown', handleGlobalShortcuts)
         return () => window.removeEventListener('keydown', handleGlobalShortcuts)
     }, [handleGlobalShortcuts])
+
+    if (!isAuthenticated) return null;
+
+    return (
+        <>
+            {/* Quick Capture Modal — Ctrl+Shift+K */}
+            <QuickCapture
+                isOpen={quickCaptureOpen}
+                onClose={() => setQuickCaptureOpen(false)}
+            />
+
+            {/* AI Chat Panel — Ctrl+Shift+L */}
+            <AiChatPanel
+                isOpen={aiChatOpen}
+                onClose={() => setAiChatOpen(false)}
+            />
+
+            {/* Floating AI Chat Button */}
+            <button
+                onClick={() => setAiChatOpen(true)}
+                className="fixed bottom-6 right-6 z-30 w-12 h-12 rounded-full 
+                           bg-accent text-accent-ink shadow-lg hover:shadow-xl 
+                           hover:scale-105 active:scale-95 transition-all duration-200
+                           flex items-center justify-center text-xl"
+                title="Ask your brain (Ctrl+Shift+L)"
+            >
+                🧠
+            </button>
+        </>
+    )
+}
+
+export default function App() {
 
     return (
         <ErrorBoundary>
@@ -77,39 +113,17 @@ export default function App() {
                         />
 
                         <Suspense fallback={<PageLoader />}>
-                            {/* Quick Capture Modal — Ctrl+Shift+K */}
-                            <QuickCapture
-                                isOpen={quickCaptureOpen}
-                                onClose={() => setQuickCaptureOpen(false)}
-                            />
-
-                            {/* AI Chat Panel — Ctrl+Shift+L */}
-                            <AiChatPanel
-                                isOpen={aiChatOpen}
-                                onClose={() => setAiChatOpen(false)}
-                            />
-
-                            {/* Floating AI Chat Button */}
-                            <button
-                                onClick={() => setAiChatOpen(true)}
-                                className="fixed bottom-6 right-6 z-30 w-12 h-12 rounded-full 
-                                           bg-accent text-accent-ink shadow-lg hover:shadow-xl 
-                                           hover:scale-105 active:scale-95 transition-all duration-200
-                                           flex items-center justify-center text-xl"
-                                title="Ask your brain (Ctrl+Shift+L)"
-                            >
-                                🧠
-                            </button>
+                            <GlobalOverlays />
 
                             <Routes>
                                 {/* Public */}
+                                <Route path="/" element={<Landing />} />
                                 <Route path="/login" element={<Login />} />
                                 <Route path="/register" element={<Register />} />
 
                                 {/* Protected */}
                                 <Route element={<ProtectedRoute />}>
                                     <Route element={<Layout />}>
-                                        <Route path="/" element={<Navigate to="/dashboard" replace />} />
                                         <Route path="/dashboard" element={<Dashboard />} />
                                         <Route path="/graph" element={<Graph />} />
                                         <Route path="/notes/new" element={<NoteCreate />} />
