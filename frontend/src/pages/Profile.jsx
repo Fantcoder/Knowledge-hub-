@@ -6,7 +6,8 @@ import toast from 'react-hot-toast'
 export default function Profile() {
     const { user, logout } = useAuth()
     const navigate = useNavigate()
-    const [dark, setDark] = useState(localStorage.getItem('darkMode') === 'true')
+    const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark')
+    const dark = theme === 'dark'
 
     const handleLogout = async () => {
         await logout()
@@ -15,10 +16,10 @@ export default function Profile() {
     }
 
     const toggleDark = () => {
-        const next = !dark
-        setDark(next)
-        localStorage.setItem('darkMode', String(next))
-        document.documentElement.classList.toggle('dark', next)
+        const next = theme === 'dark' ? 'light' : 'dark'
+        setTheme(next)
+        localStorage.setItem('theme', next)
+        document.documentElement.classList.toggle('dark', next === 'dark')
     }
 
     const initial = user?.username?.[0]?.toUpperCase() || '?'

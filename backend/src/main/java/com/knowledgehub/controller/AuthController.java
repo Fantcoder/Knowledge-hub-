@@ -13,22 +13,34 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
+import com.knowledgehub.security.AuthRateLimiter;
+import jakarta.servlet.http.HttpServletRequest;
+
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
 public class AuthController {
 
     private final AuthService authService;
+    private final AuthRateLimiter rateLimiter;
 
     @PostMapping("/register")
-    public ResponseEntity<ApiResponse<AuthResponse>> register(@Valid @RequestBody RegisterRequest request) {
+    public ResponseEntity<ApiResponse<AuthResponse>> register(@Valid @RequestBody RegisterRequest request, HttpServletRequest httpRequest) {
+        if (!rateLimiter.isAllowed(httpRequest)) {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                    .body(ApiResponse.error("Too many attempts. Please try again later.", 429));
+        }
         AuthResponse response = authService.register(request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Registration successful", response));
     }
 
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<AuthResponse>> login(@Valid @RequestBody LoginRequest request) {
+    public ResponseEntity<ApiResponse<AuthResponse>> login(@Valid @RequestBody LoginRequest request, HttpServletRequest httpRequest) {
+        if (!rateLimiter.isAllowed(httpRequest)) {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                    .body(ApiResponse.error("Too many attempts. Please try again later.", 429));
+        }
         AuthResponse response = authService.login(request);
         return ResponseEntity.ok(ApiResponse.success("Login successful", response));
     }

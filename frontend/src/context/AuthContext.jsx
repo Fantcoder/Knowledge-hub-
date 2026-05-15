@@ -92,8 +92,8 @@ export function AuthProvider({ children }) {
 
     // Apply dark mode on first load
     useEffect(() => {
-        const dark = localStorage.getItem('darkMode') === 'true'
-        if (dark) document.documentElement.classList.add('dark')
+        const theme = localStorage.getItem('theme') || 'dark'
+        if (theme === 'dark') document.documentElement.classList.add('dark')
     }, [])
 
     return (

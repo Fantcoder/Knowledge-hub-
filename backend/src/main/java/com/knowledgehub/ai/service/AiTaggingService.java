@@ -62,7 +62,7 @@ public class AiTaggingService {
                     .bodyValue(requestBody)
                     .retrieve()
                     .bodyToMono(Map.class)
-                    .block();
+                    .block(java.time.Duration.ofSeconds(15));
 
             if (response != null && response.containsKey("choices")) {
                 List<?> choices = (List<?>) response.get("choices");

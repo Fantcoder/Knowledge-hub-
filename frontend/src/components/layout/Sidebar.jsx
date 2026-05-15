@@ -25,7 +25,8 @@ export default function Sidebar({ isOpen, onClose }) {
     const { dispatch, activeTag, fetchNotes } = useNotes()
     const navigate = useNavigate()
     const [tags, setTags] = useState([])
-    const [dark, setDark] = useState(localStorage.getItem('darkMode') === 'true')
+    const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark')
+    const dark = theme === 'dark'
 
     useEffect(() => {
         tagService.getAll().then((r) => setTags(r.data.data || [])).catch(() => { })
@@ -49,10 +50,10 @@ export default function Sidebar({ isOpen, onClose }) {
     }
 
     const toggleDark = () => {
-        const next = !dark
-        setDark(next)
-        localStorage.setItem('darkMode', String(next))
-        document.documentElement.classList.toggle('dark', next)
+        const next = theme === 'dark' ? 'light' : 'dark'
+        setTheme(next)
+        localStorage.setItem('theme', next)
+        document.documentElement.classList.toggle('dark', next === 'dark')
     }
 
     const initial = user?.username?.[0]?.toUpperCase() || '?'

@@ -19,6 +19,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import java.util.List;
 import java.util.Map;
 
@@ -39,10 +40,10 @@ public class AiController {
      * The killer feature: ask questions, get answers sourced from YOUR notes.
      */
     @PostMapping("/chat")
-    public ResponseEntity<ApiResponse<ChatResponse>> chat(@Valid @RequestBody ChatRequest request) {
+    public Mono<ResponseEntity<ApiResponse<ChatResponse>>> chat(@Valid @RequestBody ChatRequest request) {
         User user = getCurrentUser();
-        ChatResponse response = chatService.chat(user, request);
-        return ResponseEntity.ok(ApiResponse.success(response));
+        return chatService.chatReactive(user, request)
+                .map(response -> ResponseEntity.ok(ApiResponse.success(response)));
     }
 
     /**
@@ -93,10 +94,10 @@ public class AiController {
         int count = 0;
         for (Note note : notes) {
             try {
-                embeddingService.embedNote(note);
+                embeddingService.embedNoteAsync(note);
                 count++;
             } catch (Exception e) {
-                log.error("Failed to embed note {}: {}", note.getId(), e.getMessage());
+                log.error("Failed to queue note embedding {}: {}", note.getId(), e.getMessage());
             }
         }
 
