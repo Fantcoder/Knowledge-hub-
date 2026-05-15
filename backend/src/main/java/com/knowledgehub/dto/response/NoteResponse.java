@@ -24,4 +24,6 @@ public class NoteResponse {
     private LocalDateTime updatedAt;
     private List<String> tags;
     private List<FileResponse> files;
+    private Boolean isShared;
+    private String shareSlug;
 }

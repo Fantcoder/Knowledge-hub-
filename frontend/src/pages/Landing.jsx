@@ -13,7 +13,7 @@ const Typewriter = ({ texts }) => {
     const [blink, setBlink] = useState(true);
 
     useEffect(() => {
-        if (subIndex === texts[index].length + 1 && !reverse) {
+        if (subIndex === texts[index].length + 1 && !reverse) { 
             setTimeout(() => setReverse(true), 1500);
             return;
         }

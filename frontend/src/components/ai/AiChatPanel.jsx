@@ -2,10 +2,6 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { aiService } from '../../services/aiService'
 
-/**
- * AI Chat Panel — "Talk to your brain" 🧠
- * Floating slide-over panel for chatting with your notes.
- */
 export default function AiChatPanel({ isOpen, onClose }) {
     const [messages, setMessages] = useState([])
     const [input, setInput] = useState('')

@@ -1,5 +1,4 @@
 package com.knowledgehub.ai.controller;
-
 import com.knowledgehub.ai.dto.ChatRequest;
 import com.knowledgehub.ai.dto.ChatResponse;
 import com.knowledgehub.ai.dto.SemanticSearchResult;
@@ -20,7 +19,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
-
 import java.util.List;
 import java.util.Map;
 

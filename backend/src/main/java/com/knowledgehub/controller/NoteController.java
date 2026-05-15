@@ -69,6 +69,11 @@ public class NoteController {
         return ResponseEntity.ok(ApiResponse.success("Note restored", noteService.restoreNote(id)));
     }
 
+    @PatchMapping("/{id}/share")
+    public ResponseEntity<ApiResponse<NoteResponse>> toggleShare(@PathVariable Long id) {
+        return ResponseEntity.ok(ApiResponse.success("Note share updated", noteService.toggleShare(id)));
+    }
+
     @DeleteMapping("/{id}/permanent")
     public ResponseEntity<ApiResponse<Void>> permanentDelete(@PathVariable Long id) {
         noteService.permanentDeleteNote(id);

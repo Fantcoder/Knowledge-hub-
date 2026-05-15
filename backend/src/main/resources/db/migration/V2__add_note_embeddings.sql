@@ -3,6 +3,7 @@
 -- Stores local feature-hash vectors for semantic search / RAG
 -- ============================================================
 
+
 CREATE TABLE IF NOT EXISTS note_embeddings (
   id               BIGSERIAL    PRIMARY KEY,
   note_id          BIGINT       NOT NULL UNIQUE REFERENCES notes(id) ON DELETE CASCADE,

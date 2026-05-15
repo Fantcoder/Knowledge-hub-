@@ -3,6 +3,7 @@ package com.knowledgehub.service;
 import com.knowledgehub.dto.request.NoteRequest;
 import com.knowledgehub.dto.response.FileResponse;
 import com.knowledgehub.dto.response.NoteResponse;
+import com.knowledgehub.dto.response.SharedNoteResponse;
 import com.knowledgehub.entity.Note;
 import com.knowledgehub.entity.Tag;
 import com.knowledgehub.entity.User;
@@ -23,6 +24,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.security.SecureRandom;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -270,6 +272,48 @@ public class NoteService {
     }
 
     @Transactional
+    @CacheEvict(value = { "notesList", "noteById" }, allEntries = true)
+    public NoteResponse toggleShare(Long id) {
+        User user = getCurrentUser();
+        Note note = noteRepository.findByIdAndUser(id, user)
+                .orElseThrow(() -> new ResourceNotFoundException("Note", id));
+        
+        if (note.getIsShared() != null && note.getIsShared()) {
+            note.setIsShared(false);
+            note.setShareSlug(null);
+        } else {
+            note.setIsShared(true);
+            note.setShareSlug(generateShareSlug());
+        }
+        return toResponse(noteRepository.save(note));
+    }
+
+    @Transactional(readOnly = true)
+    public SharedNoteResponse getSharedNote(String slug) {
+        Note note = noteRepository.findByShareSlugAndIsSharedTrue(slug)
+                .orElseThrow(() -> new ResourceNotFoundException("Shared Note not found"));
+        
+        return SharedNoteResponse.builder()
+                .title(note.getTitle())
+                .content(note.getContent())
+                .tags(note.getTags().stream().map(Tag::getName).sorted().collect(Collectors.toList()))
+                .createdAt(note.getCreatedAt())
+                .updatedAt(note.getUpdatedAt())
+                .shareSlug(note.getShareSlug())
+                .build();
+    }
+
+    private String generateShareSlug() {
+        String chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        SecureRandom random = new SecureRandom();
+        StringBuilder sb = new StringBuilder(8);
+        for (int i = 0; i < 8; i++) {
+            sb.append(chars.charAt(random.nextInt(chars.length())));
+        }
+        return sb.toString();
+    }
+
+    @Transactional
     public void modifyAndSaveTagsAsync(Long noteId, Long userId, List<String> newTags) {
         User user = userRepository.findById(userId).orElseThrow();
         Note note = noteRepository.findByIdAndUser(noteId, user).orElseThrow();
@@ -339,6 +383,8 @@ public class NoteService {
                 .updatedAt(note.getUpdatedAt())
                 .tags(note.getTags().stream().map(Tag::getName).sorted().collect(Collectors.toList()))
                 .files(fileResponses)
+                .isShared(note.getIsShared())
+                .shareSlug(note.getShareSlug())
                 .build();
     }
 }

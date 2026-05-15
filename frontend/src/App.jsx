@@ -23,6 +23,7 @@ const Files = lazy(() => import('./pages/Files'))
 const Trash = lazy(() => import('./pages/Trash'))
 const Profile = lazy(() => import('./pages/Profile'))
 const ExportData = lazy(() => import('./pages/ExportData'))
+const SharedNoteView = lazy(() => import('./pages/SharedNoteView'))
 const NotFound = lazy(() => import('./pages/NotFound'))
 
 const PageLoader = () => (
@@ -120,6 +121,7 @@ export default function App() {
                                 <Route path="/" element={<Landing />} />
                                 <Route path="/login" element={<Login />} />
                                 <Route path="/register" element={<Register />} />
+                                <Route path="/shared/:slug" element={<SharedNoteView />} />
 
                                 {/* Protected */}
                                 <Route element={<ProtectedRoute />}>

@@ -45,6 +45,13 @@ public class Note {
     @Builder.Default
     private Boolean isDeleted = false;
 
+    @Column(name = "share_slug", unique = true, length = 16)
+    private String shareSlug;
+
+    @Column(name = "is_shared")
+    @Builder.Default
+    private Boolean isShared = false;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

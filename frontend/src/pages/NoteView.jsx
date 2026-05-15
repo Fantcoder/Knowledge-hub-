@@ -29,6 +29,22 @@ export default function NoteView() {
         setNote(res.data.data)
     }
 
+    const handleShare = async () => {
+        const res = await noteService.toggleShare(id)
+        setNote(res.data.data)
+        if (res.data.data.isShared) {
+            toast.success('Note shared! Click Share again to copy link.')
+        } else {
+            toast.success('Note is no longer shared.')
+        }
+    }
+
+    const copyLink = () => {
+        const url = `${window.location.origin}/shared/${note.shareSlug}`
+        navigator.clipboard.writeText(url)
+        toast.success('Link copied to clipboard!')
+    }
+
     const handleDelete = async () => {
         await deleteNote(parseInt(id))
         navigate('/dashboard')
@@ -58,6 +74,23 @@ export default function NoteView() {
                             className={`btn-ghost text-xs py-1.5 px-2.5 ${note.isPinned ? 'text-accent' : ''}`}>
                             {note.isPinned ? '● Pinned' : 'Pin'}
                         </button>
+                        
+                        {note.isShared ? (
+                            <div className="flex items-center bg-surface-2 rounded-md mx-1 overflow-hidden">
+                                <button onClick={copyLink} className="btn-ghost text-xs py-1.5 px-2.5 hover:bg-surface-3" title="Copy public link">
+                                    🔗 Copy Link
+                                </button>
+                                <button onClick={handleShare} className="btn-ghost text-xs py-1.5 px-2.5 text-danger hover:bg-danger-soft border-l border-border" title="Stop sharing">
+                                    Unshare
+                                </button>
+                            </div>
+                        ) : (
+                            <button id="share-note" onClick={handleShare}
+                                className="btn-ghost text-xs py-1.5 px-2.5">
+                                Share
+                            </button>
+                        )}
+
                         <button id="edit-note" onClick={() => navigate(`/notes/${id}/edit`)}
                             className="btn-ghost text-xs py-1.5 px-2.5">
                             Edit
