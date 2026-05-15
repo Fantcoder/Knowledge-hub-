@@ -10,13 +10,25 @@ export default function SharedNoteView() {
     const [error, setError] = useState(false)
 
     useEffect(() => {
+        // Apply theme for visitors
+        const theme = localStorage.getItem('theme') || 'dark'
+        document.documentElement.classList.toggle('dark', theme === 'dark')
+
         let unmounted = false
         // Fetch public note data
         noteService.getShared(slug)
-            .then((r) => { if (!unmounted) setNote(r.data.data) })
+            .then((r) => { 
+                if (!unmounted) {
+                    setNote(r.data.data)
+                    document.title = `${r.data.data.title} | Knowledge Hub`
+                } 
+            })
             .catch(() => { if (!unmounted) setError(true) })
             .finally(() => { if (!unmounted) setLoading(false) })
-        return () => { unmounted = true }
+        return () => { 
+            unmounted = true 
+            document.title = 'Knowledge Hub'
+        }
     }, [slug])
 
     if (loading) {
@@ -41,7 +53,21 @@ export default function SharedNoteView() {
 
     return (
         <div className="min-h-screen bg-surface-1 text-ink selection:bg-accent/20">
-            <div className="max-w-3xl mx-auto px-6 pt-16 pb-32 animate-in">
+            {/* Top Navbar */}
+            <nav className="fixed top-0 w-full z-50 bg-surface-1/70 backdrop-blur-md border-b border-border shadow-sm">
+                <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+                    <Link to="/" className="flex items-center gap-3 cursor-pointer select-none">
+                        <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-accent text-accent-ink font-bold shadow-inner">K</div>
+                        <span className="font-serif text-xl text-ink tracking-tight hidden sm:block">knowledge hub</span>
+                    </Link>
+                    <div className="flex items-center gap-4">
+                        <Link to="/login" className="text-sm font-medium text-ink-muted hover:text-ink transition-colors hidden sm:block">Sign in</Link>
+                        <Link to="/register" className="btn-primary py-2 px-5 text-sm shadow-md shadow-accent/20">Get Started Free</Link>
+                    </div>
+                </div>
+            </nav>
+
+            <div className="max-w-3xl mx-auto px-6 pt-32 pb-32 animate-in">
                 
                 {/* Note Header */}
                 <header className="mb-12">

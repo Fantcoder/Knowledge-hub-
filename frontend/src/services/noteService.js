@@ -12,7 +12,5 @@ export const noteService = {
     archive: (id) => api.patch(`/notes/${id}/archive`),
     search: (params) => api.get('/notes/search', { params }),
     toggleShare: (id) => api.patch(`/notes/${id}/share`),
-    getShared: (slug) => {
-        return import('axios').then(axios => axios.default.get(import.meta.env.VITE_API_URL + `/shared/${slug}`))
-    }
+    getShared: (slug) => api.get(`/shared/${slug}`)
 }
