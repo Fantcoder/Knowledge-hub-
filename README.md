@@ -3,7 +3,7 @@
 
   <h1 align="center">Knowledge Hub</h1>
   <p align="center">
-    <strong>Your AI-powered second brain and public knowledge base.</strong>
+    <strong>Your AI-powered second brain and private knowledge base.</strong>
   </p>
 
   <p align="center">
