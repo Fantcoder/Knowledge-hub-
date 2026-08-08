@@ -10,6 +10,7 @@ import com.knowledgehub.repository.NoteRepository;
 import com.knowledgehub.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.tika.Tika;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
@@ -67,9 +68,17 @@ public class FileStorageService {
             throw new IllegalArgumentException("File size exceeds maximum allowed limit of 10MB");
         }
 
-        // Validate MIME type
-        String contentType = file.getContentType();
-        if (contentType == null || !ALLOWED_MIME_TYPES.contains(contentType)) {
+        // Validate MIME type using Apache Tika (reads actual file magic bytes).
+        // This prevents MIME type spoofing — e.g. a .php file renamed to .jpg.
+        // We do NOT trust file.getContentType() which is browser-declared and can be faked.
+        Tika tika = new Tika();
+        String detectedType;
+        try {
+            detectedType = tika.detect(file.getInputStream());
+        } catch (IOException e) {
+            throw new IllegalArgumentException("Could not read file to validate its type");
+        }
+        if (!ALLOWED_MIME_TYPES.contains(detectedType)) {
             throw new IllegalArgumentException(
                     "File type not allowed. Allowed types: PDF, DOCX, PNG, JPG, JPEG, WEBP, TXT");
         }
