@@ -43,10 +43,13 @@ public class AuthService {
     @Transactional
     public AuthResponse register(RegisterRequest request) {
         if (userRepository.existsByUsername(request.getUsername())) {
-            throw new IllegalArgumentException("Username is already taken");
+            throw new IllegalArgumentException("Registration failed. Please check your details and try again.");
         }
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new IllegalArgumentException("Email is already registered");
+            throw new IllegalArgumentException("Registration failed. Please check your details and try again.");
+        }
+        if (organizationRepository.existsByName(request.getOrganizationName())) {
+            throw new IllegalArgumentException("Registration failed. Please check your details and try again.");
         }
 
         User user = User.builder()
