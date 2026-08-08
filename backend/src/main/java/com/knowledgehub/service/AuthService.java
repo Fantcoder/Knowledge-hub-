@@ -48,9 +48,6 @@ public class AuthService {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new IllegalArgumentException("Registration failed. Please check your details and try again.");
         }
-        if (organizationRepository.existsByName(request.getOrganizationName())) {
-            throw new IllegalArgumentException("Registration failed. Please check your details and try again.");
-        }
 
         User user = User.builder()
                 .username(request.getUsername())

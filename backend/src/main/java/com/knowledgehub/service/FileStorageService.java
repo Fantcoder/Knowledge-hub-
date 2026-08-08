@@ -113,7 +113,7 @@ public class FileStorageService {
         FileEntity fileEntity = FileEntity.builder()
                 .originalName(originalFilename)
                 .storedName(storedName)
-                .fileType(contentType)
+                .fileType(detectedType)
                 .fileSize(file.getSize())
                 .filePath(relativePath + "/" + storedName)
                 .note(note)
