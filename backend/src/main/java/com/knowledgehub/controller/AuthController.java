@@ -5,16 +5,17 @@ import com.knowledgehub.dto.request.RegisterRequest;
 import com.knowledgehub.dto.response.ApiResponse;
 import com.knowledgehub.dto.response.AuthResponse;
 import com.knowledgehub.service.AuthService;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
-
 import com.knowledgehub.security.AuthRateLimiter;
-import jakarta.servlet.http.HttpServletRequest;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -24,48 +25,128 @@ public class AuthController {
     private final AuthService authService;
     private final AuthRateLimiter rateLimiter;
 
+    @Value("${app.cookie.secure:true}")
+    private boolean cookieSecure;
+
+    // ─── Register ────────────────────────────────────────────────────────────
+
     @PostMapping("/register")
-    public ResponseEntity<ApiResponse<AuthResponse>> register(@Valid @RequestBody RegisterRequest request, HttpServletRequest httpRequest) {
+    public ResponseEntity<ApiResponse<AuthResponse>> register(
+            @Valid @RequestBody RegisterRequest request,
+            HttpServletRequest httpRequest,
+            HttpServletResponse httpResponse) {
+
         if (!rateLimiter.isAllowed(httpRequest)) {
             return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
                     .body(ApiResponse.error("Too many attempts. Please try again later.", 429));
         }
         AuthResponse response = authService.register(request);
+        setRefreshTokenCookie(httpResponse, response.getRefreshTokenValue());
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Registration successful", response));
     }
 
+    // ─── Login ───────────────────────────────────────────────────────────────
+
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<AuthResponse>> login(@Valid @RequestBody LoginRequest request, HttpServletRequest httpRequest) {
+    public ResponseEntity<ApiResponse<AuthResponse>> login(
+            @Valid @RequestBody LoginRequest request,
+            HttpServletRequest httpRequest,
+            HttpServletResponse httpResponse) {
+
         if (!rateLimiter.isAllowed(httpRequest)) {
             return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
                     .body(ApiResponse.error("Too many attempts. Please try again later.", 429));
         }
         AuthResponse response = authService.login(request);
+        setRefreshTokenCookie(httpResponse, response.getRefreshTokenValue());
         return ResponseEntity.ok(ApiResponse.success("Login successful", response));
     }
 
+    // ─── Google OAuth ────────────────────────────────────────────────────────
+
     @PostMapping("/google")
     public ResponseEntity<ApiResponse<AuthResponse>> googleLogin(
-            @Valid @RequestBody com.knowledgehub.dto.request.GoogleLoginRequest request) {
+            @Valid @RequestBody com.knowledgehub.dto.request.GoogleLoginRequest request,
+            HttpServletResponse httpResponse) {
+
         AuthResponse response = authService.googleLogin(request);
+        setRefreshTokenCookie(httpResponse, response.getRefreshTokenValue());
         return ResponseEntity.ok(ApiResponse.success("Google Login successful", response));
     }
 
+    // ─── Refresh ─────────────────────────────────────────────────────────────
+
     @PostMapping("/refresh")
-    public ResponseEntity<ApiResponse<AuthResponse>> refresh(@RequestBody Map<String, String> body) {
-        String refreshToken = body.get("refreshToken");
+    public ResponseEntity<ApiResponse<AuthResponse>> refresh(
+            HttpServletRequest httpRequest,
+            HttpServletResponse httpResponse) {
+
+        // Read refresh token from httpOnly cookie — NOT from request body.
+        String refreshToken = extractRefreshTokenCookie(httpRequest);
+
         if (refreshToken == null || refreshToken.isBlank()) {
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Refresh token is required", 400));
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("No refresh token found. Please log in again.", 401));
         }
+
         AuthResponse response = authService.refreshToken(refreshToken);
+        // Rotate the refresh token cookie on every refresh (token rotation)
+        setRefreshTokenCookie(httpResponse, response.getRefreshTokenValue());
         return ResponseEntity.ok(ApiResponse.success("Token refreshed", response));
     }
 
+    // ─── Logout ──────────────────────────────────────────────────────────────
+
     @PostMapping("/logout")
-    public ResponseEntity<ApiResponse<Void>> logout() {
-        // Stateless JWT: client-side token removal handles logout
+    public ResponseEntity<ApiResponse<Void>> logout(HttpServletResponse httpResponse) {
+        // Clear the httpOnly cookie by setting Max-Age=0
+        clearRefreshTokenCookie(httpResponse);
         return ResponseEntity.ok(ApiResponse.success("Logged out successfully", null));
+    }
+
+    // ─── Cookie helpers ───────────────────────────────────────────────────────
+
+    /**
+     * Sets the refresh token as an httpOnly, Secure, SameSite=Strict cookie.
+     * Path is scoped to /api/auth/refresh so the cookie is ONLY sent to that
+     * endpoint — not leaked on every API call.
+     */
+    private void setRefreshTokenCookie(HttpServletResponse response, String refreshToken) {
+        if (refreshToken == null) return;
+
+        // Build cookie manually to support SameSite attribute (Jakarta Cookie doesn't expose it)
+        String cookieValue = String.format(
+                "refreshToken=%s; Max-Age=%d; Path=/api/auth/refresh; HttpOnly; %sSameSite=Strict",
+                refreshToken,
+                7 * 24 * 60 * 60, // 7 days in seconds
+                cookieSecure ? "Secure; " : ""
+        );
+        response.addHeader("Set-Cookie", cookieValue);
+    }
+
+    /**
+     * Overwrites the cookie with an expired empty value to delete it.
+     */
+    private void clearRefreshTokenCookie(HttpServletResponse response) {
+        String cookieValue = String.format(
+                "refreshToken=; Max-Age=0; Path=/api/auth/refresh; HttpOnly; %sSameSite=Strict",
+                cookieSecure ? "Secure; " : ""
+        );
+        response.addHeader("Set-Cookie", cookieValue);
+    }
+
+    /**
+     * Reads the refreshToken value from the incoming Cookie header.
+     */
+    private String extractRefreshTokenCookie(HttpServletRequest request) {
+        Cookie[] cookies = request.getCookies();
+        if (cookies == null) return null;
+        for (Cookie cookie : cookies) {
+            if ("refreshToken".equals(cookie.getName())) {
+                return cookie.getValue();
+            }
+        }
+        return null;
     }
 }

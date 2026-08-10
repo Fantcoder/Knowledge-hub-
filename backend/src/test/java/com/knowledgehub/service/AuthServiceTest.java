@@ -139,7 +139,7 @@ class AuthServiceTest {
         AuthResponse response = authService.register(req);
 
         assertThat(response.getAccessToken()).isEqualTo("access.token.here");
-        assertThat(response.getRefreshToken()).isEqualTo("refresh.token.here");
+        assertThat(response.getRefreshTokenValue()).isEqualTo("refresh.token.here");
         verify(userRepository).save(any(User.class));
     }
 
