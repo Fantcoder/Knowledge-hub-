@@ -115,12 +115,16 @@ public class AuthController {
     private void setRefreshTokenCookie(HttpServletResponse response, String refreshToken) {
         if (refreshToken == null) return;
 
-        // Build cookie manually to support SameSite attribute (Jakarta Cookie doesn't expose it)
+        // If secure=true (production HTTPS), we MUST use SameSite=None for cross-domain cookies (Vercel -> Render).
+        // If secure=false (local HTTP), browsers reject SameSite=None, so we use Lax.
+        String sameSite = cookieSecure ? "None" : "Lax";
+        
         String cookieValue = String.format(
-                "refreshToken=%s; Max-Age=%d; Path=/api/auth/refresh; HttpOnly; %sSameSite=Strict",
+                "refreshToken=%s; Max-Age=%d; Path=/api/auth/refresh; HttpOnly; %sSameSite=%s",
                 refreshToken,
                 7 * 24 * 60 * 60, // 7 days in seconds
-                cookieSecure ? "Secure; " : ""
+                cookieSecure ? "Secure; " : "",
+                sameSite
         );
         response.addHeader("Set-Cookie", cookieValue);
     }
@@ -129,9 +133,11 @@ public class AuthController {
      * Overwrites the cookie with an expired empty value to delete it.
      */
     private void clearRefreshTokenCookie(HttpServletResponse response) {
+        String sameSite = cookieSecure ? "None" : "Lax";
         String cookieValue = String.format(
-                "refreshToken=; Max-Age=0; Path=/api/auth/refresh; HttpOnly; %sSameSite=Strict",
-                cookieSecure ? "Secure; " : ""
+                "refreshToken=; Max-Age=0; Path=/api/auth/refresh; HttpOnly; %sSameSite=%s",
+                cookieSecure ? "Secure; " : "",
+                sameSite
         );
         response.addHeader("Set-Cookie", cookieValue);
     }
