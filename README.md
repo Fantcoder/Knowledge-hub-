@@ -13,7 +13,6 @@
     <img src="https://img.shields.io/badge/Spring_Boot_3-6DB33F?style=for-the-badge&logo=springboot&logoColor=white" alt="Spring Boot" />
     <img src="https://img.shields.io/badge/React_18-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React" />
     <img src="https://img.shields.io/badge/Groq_AI-000000?style=for-the-badge&logo=openai&logoColor=white" alt="Groq" />
-    <img src="https://img.shields.io/badge/Tests-24_Passing-brightgreen?style=for-the-badge&logo=junit5" alt="Tests" />
   </p>
 
   <p align="center">
@@ -55,18 +54,6 @@ Notes and tags are visualized in a **D3 force-directed graph**, revealing hidden
 - **Zen Mode:** Fullscreen, distraction-free writing environment
 
 ---
-
-## 🛡️ Security
-
-This project has undergone a **full security audit**. The following vulnerabilities have been identified and fixed in the `security-fixes` branch, each with a dedicated unit test:
-
-| # | Vulnerability | Severity | Fix | Test |
-|---|---|---|---|---|
-| 1 | XFF IP Spoofing in rate limiters | 🔴 High | Use last IP in XFF chain (proxy-set), not first (client-controlled) | `AuthRateLimiterTest`, `RateLimitFilterTest` |
-| 2 | MIME Type Bypass (file upload) | 🔴 High | Apache Tika magic-byte detection — ignores browser Content-Type | `FileStorageServiceTest` |
-| 3 | Missing Content-Security-Policy | 🟠 Medium | CSP header added to `SecurityHeadersFilter` | `SecurityHeadersFilterTest` |
-| 4 | Multipart Size Mismatch | 🟠 Medium | Aligned Spring's limit to 10MB (was 50MB) | — |
-| 5 | Account Enumeration | 🟠 Medium | Generic error messages — same response for all registration failures | `AuthServiceTest` |
 
 ### ✅ Already Secure
 - **BCrypt** password hashing (cost factor 12)
@@ -183,7 +170,6 @@ mvn test
 | Branch | Purpose |
 |---|---|
 | `main` | Stable production code — original PKM app |
-| `security-fixes` | All 5 security fixes + 24 unit tests — ready to merge |
 | `builddocs` | Experimental pivot: AI architecture memory for engineering teams |
 
 ---
@@ -193,8 +179,8 @@ mvn test
 | Service | Platform |
 |---|---|
 | **Frontend** | [Vercel](https://vercel.com) — connect repo, build with `npm run build` |
-| **Backend** | [Render](https://render.com) — native Java or Docker |
-| **Database** | [Neon](https://neon.tech) — serverless PostgreSQL, free tier available |
+| **Backend** | [Render](https://render.com) — native Java|
+| **Database** | [Neon](https://neon.tech) — serverless PostgreSQL|
 
 ---
 
