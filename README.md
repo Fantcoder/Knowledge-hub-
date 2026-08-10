@@ -13,7 +13,6 @@
     <img src="https://img.shields.io/badge/Spring_Boot_3-6DB33F?style=for-the-badge&logo=springboot&logoColor=white" alt="Spring Boot" />
     <img src="https://img.shields.io/badge/React_18-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React" />
     <img src="https://img.shields.io/badge/Groq_AI-000000?style=for-the-badge&logo=openai&logoColor=white" alt="Groq" />
-    <img src="https://img.shields.io/badge/Tests-24_Passing-brightgreen?style=for-the-badge&logo=junit5" alt="Tests" />
   </p>
 
   <p align="center">
