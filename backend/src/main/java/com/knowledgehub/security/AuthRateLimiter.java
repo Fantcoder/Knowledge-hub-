@@ -35,6 +35,9 @@ public class AuthRateLimiter {
         if (xfHeader == null || xfHeader.isEmpty() || "unknown".equalsIgnoreCase(xfHeader)) {
             return request.getRemoteAddr();
         }
-        return xfHeader.split(",")[0];
+        // Take the LAST IP — set by our trusted proxy (Render/Nginx), not the client.
+        // Taking [0] (the first) is unsafe: attackers can inject any value there.
+        String[] parts = xfHeader.split(",");
+        return parts[parts.length - 1].trim();
     }
 }

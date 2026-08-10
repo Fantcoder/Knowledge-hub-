@@ -43,10 +43,10 @@ public class AuthService {
     @Transactional
     public AuthResponse register(RegisterRequest request) {
         if (userRepository.existsByUsername(request.getUsername())) {
-            throw new IllegalArgumentException("Username is already taken");
+            throw new IllegalArgumentException("Registration failed. Please check your details and try again.");
         }
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new IllegalArgumentException("Email is already registered");
+            throw new IllegalArgumentException("Registration failed. Please check your details and try again.");
         }
 
         User user = User.builder()
@@ -153,7 +153,7 @@ public class AuthService {
     private AuthResponse buildAuthResponse(User user, String accessToken, String refreshToken) {
         return AuthResponse.builder()
                 .accessToken(accessToken)
-                .refreshToken(refreshToken)
+                .refreshTokenValue(refreshToken)   // @JsonIgnore — goes to cookie, not JSON body
                 .tokenType("Bearer")
                 .userId(user.getId())
                 .username(user.getUsername())

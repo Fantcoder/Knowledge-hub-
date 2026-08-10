@@ -39,6 +39,17 @@ public class SecurityHeadersFilter implements Filter {
         // Restrict permissions
         res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
 
+        // Content Security Policy — prevents XSS by whitelisting allowed sources.
+        // 'unsafe-inline' on style-src is needed for inline styles (React/Vite use them).
+        res.setHeader("Content-Security-Policy",
+                "default-src 'self'; " +
+                "script-src 'self' https://accounts.google.com; " +
+                "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+                "font-src 'self' https://fonts.gstatic.com; " +
+                "img-src 'self' data: https:; " +
+                "connect-src 'self' https://api.groq.com; " +
+                "frame-src https://accounts.google.com;");
+
         chain.doFilter(request, response);
     }
 }

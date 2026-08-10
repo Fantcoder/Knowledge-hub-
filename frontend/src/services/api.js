@@ -5,31 +5,45 @@ const api = axios.create({
     baseURL: API_BASE_URL,
     headers: { 'Content-Type': 'application/json' },
     timeout: 30000,
+    // withCredentials: true tells the browser to send httpOnly cookies automatically.
+    // This is how the refreshToken cookie reaches /api/auth/refresh without JS touching it.
+    withCredentials: true,
 })
 
-// Attach access token to every request
+// ─── Access token injection ────────────────────────────────────────────────────
+// accessToken is stored in React state (memory), not localStorage.
+// Components that need authenticated requests call setApiToken(token) after login.
+// This is much safer than localStorage — XSS cannot read a memory variable.
+
+let _accessToken = null
+
+export function setApiToken(token) {
+    _accessToken = token
+    if (token) {
+        api.defaults.headers.common.Authorization = `Bearer ${token}`
+    } else {
+        delete api.defaults.headers.common.Authorization
+    }
+}
+
 api.interceptors.request.use(
     (config) => {
-        const token = localStorage.getItem('accessToken')
-        if (token) {
-            config.headers.Authorization = `Bearer ${token}`
+        if (_accessToken) {
+            config.headers.Authorization = `Bearer ${_accessToken}`
         }
         return config
     },
     (error) => Promise.reject(error)
 )
 
-// Handle 401 — attempt silent token refresh
+// ─── Silent token refresh on 401 ─────────────────────────────────────────────
 let isRefreshing = false
 let failedQueue = []
 
 const processQueue = (error, token = null) => {
     failedQueue.forEach((prom) => {
-        if (error) {
-            prom.reject(error)
-        } else {
-            prom.resolve(token)
-        }
+        if (error) prom.reject(error)
+        else prom.resolve(token)
     })
     failedQueue = []
 }
@@ -38,11 +52,10 @@ api.interceptors.response.use(
     (response) => response,
     async (error) => {
         const originalRequest = error.config
-
-        const isAuthError = error.response?.status === 401 || error.response?.status === 403;
+        const isAuthError = error.response?.status === 401 || error.response?.status === 403
 
         if (isAuthError && !originalRequest._retry) {
-            // Avoid retrying refresh endpoint itself
+            // Don't retry auth endpoints themselves — prevents infinite loops
             if (originalRequest.url?.includes('/auth/')) {
                 return Promise.reject(error)
             }
@@ -61,22 +74,17 @@ api.interceptors.response.use(
             originalRequest._retry = true
             isRefreshing = true
 
-            const refreshToken = localStorage.getItem('refreshToken')
-
-            if (!refreshToken) {
-                isRefreshing = false
-                clearAuthAndRedirect()
-                return Promise.reject(error)
-            }
-
             try {
-                const response = await axios.post(`${API_BASE_URL}/auth/refresh`, { refreshToken })
-                const { accessToken, refreshToken: newRefresh } = response.data.data
+                // Browser automatically sends the httpOnly refreshToken cookie.
+                // We do NOT manually attach any token here.
+                const response = await axios.post(
+                    `${API_BASE_URL}/auth/refresh`,
+                    {},
+                    { withCredentials: true }
+                )
+                const { accessToken } = response.data.data
 
-                localStorage.setItem('accessToken', accessToken)
-                localStorage.setItem('refreshToken', newRefresh)
-
-                api.defaults.headers.common.Authorization = `Bearer ${accessToken}`
+                setApiToken(accessToken)
                 processQueue(null, accessToken)
 
                 originalRequest.headers.Authorization = `Bearer ${accessToken}`
@@ -95,8 +103,7 @@ api.interceptors.response.use(
 )
 
 function clearAuthAndRedirect() {
-    localStorage.removeItem('accessToken')
-    localStorage.removeItem('refreshToken')
+    setApiToken(null)
     localStorage.removeItem('user')
     window.location.href = '/login'
 }

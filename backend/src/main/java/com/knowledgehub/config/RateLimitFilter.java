@@ -70,7 +70,10 @@ public class RateLimitFilter implements Filter {
     private String getClientIP(HttpServletRequest request) {
         String xForwardedFor = request.getHeader("X-Forwarded-For");
         if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
-            return xForwardedFor.split(",")[0].trim();
+            // Take the LAST IP — set by our trusted proxy (Render/Nginx), not the client.
+            // Taking [0] (the first) is unsafe: attackers can inject any value there.
+            String[] parts = xForwardedFor.split(",");
+            return parts[parts.length - 1].trim();
         }
         return request.getRemoteAddr();
     }
