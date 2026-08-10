@@ -3,7 +3,7 @@
 
   <h1 align="center">Knowledge Hub</h1>
   <p align="center">
-    <strong>Your AI-powered second brain and public knowledge base.</strong>
+    <strong>A secure, AI-powered personal knowledge management system.</strong>
   </p>
 
   <p align="center">
@@ -13,86 +13,108 @@
     <img src="https://img.shields.io/badge/Spring_Boot_3-6DB33F?style=for-the-badge&logo=springboot&logoColor=white" alt="Spring Boot" />
     <img src="https://img.shields.io/badge/React_18-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React" />
     <img src="https://img.shields.io/badge/Groq_AI-000000?style=for-the-badge&logo=openai&logoColor=white" alt="Groq" />
+    <img src="https://img.shields.io/badge/Tests-24_Passing-brightgreen?style=for-the-badge&logo=junit5" alt="Tests" />
   </p>
 
   <p align="center">
     <a href="#features">Features</a> •
-    <a href="#the-viral-loop-public-sharing">Public Sharing</a> •
+    <a href="#security">Security</a> •
     <a href="#architecture">Architecture</a> •
     <a href="#getting-started">Getting Started</a> •
-    <a href="#api-reference">API</a>
+    <a href="#branches">Branches</a>
   </p>
 </div>
 
 ---
 
-Knowledge Hub is a secure, privacy-first personal knowledge management system that blends Notion-style note-taking with a built-in AI assistant. It allows you to organize your thoughts, automatically tag them using AI, visualize connections in a knowledge graph, and share your best ideas with the world through public, read-only links.
+Knowledge Hub is a **production-grade**, privacy-first personal knowledge management system that blends Notion-style note-taking with a built-in AI assistant. Organize your thoughts, auto-tag them with AI, visualize connections in a knowledge graph, and share your best ideas via public read-only links — all secured with a hardened Spring Security backend.
+
+---
 
 ## ✨ Features
 
-### 🧠 The AI Second Brain
-Knowledge Hub doesn't just store your notes; it understands them. Powered by Groq (LLaMA 3.3 70B), the built-in AI acts as a research assistant that can answer questions based **strictly on your private notes**, complete with source citations. 
+### 🧠 AI Second Brain
+Powered by **Groq (LLaMA 3.3 70B)**, the built-in AI assistant answers questions based **strictly on your private notes**, with source citations. It never hallucinates from the internet — only from your own knowledge base.
 
-### 🔗 The Viral Loop: Public Sharing
-Want to share an idea with Twitter, Reddit, or your team? Click the "Share" button to generate a beautiful, public, read-only link (e.g. `your-app.com/shared/a3bF9k2x`). Anyone with the link can view your note seamlessly without logging in, and the built-in "Made with Knowledge Hub" footer drives organic traffic right back to your platform.
+### 🔗 Public Note Sharing (Viral Loop)
+Generate a beautiful, public, read-only shareable link (`your-app.com/shared/a3bF9k2x`) for any note. No login required for readers. A built-in "Made with Knowledge Hub" footer drives organic growth.
 
-### 📝 Notion-Grade Editor
-A highly polished, Tiptap-based rich text editor featuring:
-* Slash commands (`/`) for rapid formatting.
-* Floating context menus and bubble menus.
-* Full markdown shortcut support.
-* Syntax-highlighted code blocks and task lists.
+### 📝 Rich Text Editor
+A polished **Tiptap-based** editor with:
+- Slash commands (`/`) for rapid formatting
+- Floating bubble menus and context toolbars
+- Full markdown shortcut support
+- Syntax-highlighted code blocks and task lists
 
 ### 🕸️ Interactive Knowledge Graph
-See how your thoughts connect. Notes and tags are visualized in a stunning, interactive force-directed graph built with D3, allowing you to discover hidden relationships in your data.
-
-### ⚡ Lightning Fast & Offline Ready
-Knowledge Hub is a Progressive Web App (PWA). It uses IndexedDB (Dexie) and Service Workers to cache your notes locally, ensuring the app loads instantly and your notes remain accessible even when you drop off the grid.
+Notes and tags are visualized in a **D3 force-directed graph**, revealing hidden connections between your ideas.
 
 ### ⌨️ Developer-First UX
-* **Quick Capture:** Hit `Ctrl+Shift+K` to instantly dump a thought from anywhere in the app.
-* **Command Palette:** Hit `Ctrl+K` to instantly search and jump to any note, tag, or setting.
-* **Zen Mode:** A fullscreen, distraction-free writing environment with smooth animated transitions.
+- **Quick Capture:** `Ctrl+Shift+K` — dump a thought instantly from anywhere
+- **Command Palette:** `Ctrl+K` — jump to any note, tag, or setting
+- **Zen Mode:** Fullscreen, distraction-free writing environment
+
+---
+
+## 🛡️ Security
+
+This project has undergone a **full security audit**. The following vulnerabilities have been identified and fixed in the `security-fixes` branch, each with a dedicated unit test:
+
+| # | Vulnerability | Severity | Fix | Test |
+|---|---|---|---|---|
+| 1 | XFF IP Spoofing in rate limiters | 🔴 High | Use last IP in XFF chain (proxy-set), not first (client-controlled) | `AuthRateLimiterTest`, `RateLimitFilterTest` |
+| 2 | MIME Type Bypass (file upload) | 🔴 High | Apache Tika magic-byte detection — ignores browser Content-Type | `FileStorageServiceTest` |
+| 3 | Missing Content-Security-Policy | 🟠 Medium | CSP header added to `SecurityHeadersFilter` | `SecurityHeadersFilterTest` |
+| 4 | Multipart Size Mismatch | 🟠 Medium | Aligned Spring's limit to 10MB (was 50MB) | — |
+| 5 | Account Enumeration | 🟠 Medium | Generic error messages — same response for all registration failures | `AuthServiceTest` |
+
+### ✅ Already Secure
+- **BCrypt** password hashing (cost factor 12)
+- **JWT** with HMAC-SHA — validated at startup, 15-minute access tokens
+- **IDOR Protection** — every query scoped to `findByIdAndUser(id, user)`
+- **XSS Backend Sanitization** — Jsoup `Safelist.relaxed()` on all note content
+- **CORS** — locked to specific frontend URL from env var (no wildcard)
+- **Security Headers** — X-Frame-Options, X-Content-Type-Options, HSTS, Permissions-Policy
 
 ---
 
 ## 🛠️ Tech Stack
 
-**Frontend:** React 18, Vite, Tailwind CSS, Tiptap, Framer Motion, React Force Graph 2D, Dexie.js (IndexedDB).  
-**Backend:** Java 17, Spring Boot 3.2, Spring Security (JWT), Spring Data JPA, WebFlux.  
-**Database:** PostgreSQL (Neon) or MySQL 8, managed by Flyway Migrations.  
-**AI Inference:** Groq API (LLaMA 3.3 70B)  
+| Layer | Technology |
+|---|---|
+| **Frontend** | React 18, Vite, Vanilla CSS, Tiptap, Framer Motion, D3 |
+| **Backend** | Java 17, Spring Boot 3.2, Spring Security, Spring Data JPA |
+| **Database** | PostgreSQL (Neon), managed by Flyway Migrations |
+| **AI** | Groq API (LLaMA 3.3 70B) |
+| **File Security** | Apache Tika (MIME detection) |
+| **Testing** | JUnit 5, Mockito — 24 unit tests |
 
 ---
 
 ## 🏗️ Architecture
 
-```mermaid
-graph TD
-    subgraph Frontend [Frontend - React / Vite]
-        A[Tiptap Editor]
-        B[D3 Knowledge Graph]
-        C[AI Chat Panel]
-        D[IndexedDB / PWA Cache]
-    end
-
-    subgraph Backend [Backend - Spring Boot 3]
-        E[JWT Auth / Security]
-        F[Notes / Files CRUD]
-        G[AI Embeddings Service]
-    end
-
-    subgraph Data Layer [Data Layer]
-        H[(PostgreSQL / MySQL)]
-        I[Groq LLM Inference]
-    end
-
-    A -->|REST API| F
-    B -->|REST API| F
-    C -->|Streaming WebFlux| G
-    F -->|Flyway Migrations| H
-    G -->|API Request| I
-    A -->|Offline Cache| D
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Frontend (React / Vite)                   │
+│   Tiptap Editor │ D3 Graph │ AI Chat Panel │ Command Palette │
+└──────────────────────────┬──────────────────────────────────┘
+                           │ REST API (JWT)
+┌──────────────────────────▼──────────────────────────────────┐
+│                  Backend (Spring Boot 3.2)                   │
+│                                                             │
+│  SecurityHeadersFilter → RateLimitFilter → JWT Filter       │
+│       ↓                                                     │
+│  AuthController  NoteController  FileController  AI Routes  │
+│       ↓                                                     │
+│  AuthService  NoteService  FileStorageService  AiChatService│
+│       ↓                          ↓                          │
+│  UserRepo    NoteRepo        [Apache Tika]    Groq API      │
+└──────────────────────────┬──────────────────────────────────┘
+                           │ Flyway Migrations
+┌──────────────────────────▼──────────────────────────────────┐
+│              PostgreSQL (Neon Serverless)                    │
+│  users │ notes │ tags │ files │ links │ refresh_tokens      │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -100,12 +122,21 @@ graph TD
 ## 🚀 Getting Started
 
 ### Prerequisites
-* Java 17+
-* Node.js 18+
-* PostgreSQL or MySQL Database
-* A free [Groq API Key](https://console.groq.com/)
+- Java 17+
+- Node.js 18+
+- PostgreSQL database (local or [Neon](https://neon.tech))
+- A free [Groq API Key](https://console.groq.com/)
 
-### 1. Clone & Configure
+### Option A — Local PostgreSQL via Docker
+```bash
+docker run --name knowledgehub-db \
+  -e POSTGRES_USER=postgres \
+  -e POSTGRES_PASSWORD=postgres \
+  -e POSTGRES_DB=knowledgehub \
+  -p 5432:5432 -d postgres:16
+```
+
+### 1. Clone the Repository
 ```bash
 git clone https://github.com/Fantcoder/Knowledge-hub-.git
 cd Knowledge-hub-
@@ -114,9 +145,17 @@ cd Knowledge-hub-
 ### 2. Backend Setup
 ```bash
 cd backend
-cp .env.example .env
 ```
-Populate the `.env` file with your database credentials, a secure `JWT_SECRET`, and your `GROQ_API_KEY`.
+Set the following environment variables (or create a `.env` file):
+```env
+SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/knowledgehub
+SPRING_DATASOURCE_USERNAME=postgres
+SPRING_DATASOURCE_PASSWORD=postgres
+JWT_SECRET=your-very-long-secret-key-minimum-32-chars
+GROQ_API_KEY=your-groq-api-key
+FRONTEND_URL=http://localhost:5173
+GOOGLE_CLIENT_ID=your-google-oauth-client-id
+```
 ```bash
 mvn spring-boot:run
 # Backend starts on http://localhost:8080
@@ -130,24 +169,39 @@ npm run dev
 # Frontend starts on http://localhost:5173
 ```
 
+### 4. Run Tests
+```bash
+cd backend
+mvn test
+# 24 unit tests — no database required (all mocked)
+```
+
 ---
 
-## 🌍 Deployment
+## 🌿 Branches
 
-Knowledge Hub is designed to be easily deployed to modern cloud platforms:
+| Branch | Purpose |
+|---|---|
+| `main` | Stable production code — original PKM app |
+| `security-fixes` | All 5 security fixes + 24 unit tests — ready to merge |
+| `builddocs` | Experimental pivot: AI architecture memory for engineering teams |
 
-1. **Frontend:** Optimized for Vercel. Simply connect the repository and build using `npm run build`.
-2. **Backend:** Optimized for Render or Heroku using the included `Dockerfile` or native Java environments.
-3. **Database:** Designed for Neon (Serverless Postgres) or Railway.
+---
 
-*See `backend/src/main/resources/application-prod.properties` for production configuration overrides.*
+## ☁️ Deployment
+
+| Service | Platform |
+|---|---|
+| **Frontend** | [Vercel](https://vercel.com) — connect repo, build with `npm run build` |
+| **Backend** | [Render](https://render.com) — native Java or Docker |
+| **Database** | [Neon](https://neon.tech) — serverless PostgreSQL, free tier available |
 
 ---
 
 ## 🛡️ License
 
-This project is open-source and free to use. Contributions, issues, and feature requests are welcome!
+This project is open-source. Contributions, issues, and feature requests are welcome!
 
 <div align="center">
-  <p>Built with ☕ and curiosity.</p>
+  <p>Built with ☕, curiosity, and a security audit.</p>
 </div>
