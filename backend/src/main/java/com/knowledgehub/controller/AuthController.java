@@ -1,4 +1,4 @@
-﻿package com.knowledgehub.controller;
+package com.knowledgehub.controller;
 
 import com.knowledgehub.dto.request.LoginRequest;
 import com.knowledgehub.dto.request.RegisterRequest;
