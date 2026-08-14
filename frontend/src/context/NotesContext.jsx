@@ -15,7 +15,7 @@ const initialState = {
     activeTag: null,
     viewMode: localStorage.getItem('viewMode') || 'grid',
 
-    // ── Pagination state ──────────────────────────────────────
+    // ─── Pagination state ────────────────────────────────────────────────────────
     currentPage: 0,
     totalPages: 0,
     totalElements: 0,
@@ -30,19 +30,21 @@ function notesReducer(state, action) {
             const { content, totalPages, totalElements, last, number } = action.payload
             return {
                 ...state,
-                notes: content,
-                currentPage: number,
-                totalPages,
-                totalElements,
+                notes: content || [],
+                currentPage: number ?? 0,
+                totalPages: totalPages ?? 1,
+                totalElements: totalElements ?? (content?.length || 0),
                 hasMore: !last,
                 isLoading: false,
             }
         }
         case 'APPEND_NOTES': {
             const { content, totalPages, totalElements, last, number } = action.payload
+            const existingIds = new Set(state.notes.map(n => n.id))
+            const uniqueNew = (content || []).filter(n => !existingIds.has(n.id))
             return {
                 ...state,
-                notes: [...state.notes, ...content],
+                notes: [...state.notes, ...uniqueNew],
                 currentPage: number,
                 totalPages,
                 totalElements,
@@ -57,25 +59,20 @@ function notesReducer(state, action) {
         case 'ADD_NOTE':
             return {
                 ...state,
-                notes: [action.payload, ...state.notes],
-                totalElements: state.totalElements + 1,
+                notes: [action.payload, ...state.notes.filter(n => n.id !== action.payload.id)],
+                totalElements: state.totalElements + 1
             }
         case 'UPDATE_NOTE':
             return {
                 ...state,
-                notes: state.notes.map((n) =>
-                    n.id === action.payload.id ? action.payload : n
-                ),
-                selectedNote:
-                    state.selectedNote?.id === action.payload.id
-                        ? action.payload
-                        : state.selectedNote,
+                notes: state.notes.map(n => n.id === action.payload.id ? action.payload : n),
+                selectedNote: state.selectedNote?.id === action.payload.id ? action.payload : state.selectedNote
             }
         case 'REMOVE_NOTE':
             return {
                 ...state,
-                notes: state.notes.filter((n) => n.id !== action.payload),
-                totalElements: state.totalElements - 1,
+                notes: state.notes.filter(n => n.id !== action.payload),
+                totalElements: Math.max(0, state.totalElements - 1)
             }
         case 'SET_SEARCH':
             return { ...state, searchQuery: action.payload }

@@ -1,29 +1,14 @@
-import React, { forwardRef } from 'react'
+import React from 'react'
 import { useNotes } from '../../context/NotesContext'
 import NoteCard from './NoteCard'
 import EmptyState from '../common/EmptyState'
 import { useNavigate } from 'react-router-dom'
-import { Virtuoso, VirtuosoGrid } from 'react-virtuoso'
-
-const GridList = forwardRef((props, ref) => (
-    <div ref={ref} {...props} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3" />
-))
-
-const GridItem = forwardRef(({ children, ...props }, ref) => (
-    <div ref={ref} {...props} className="h-full w-full">
-        {children}
-    </div>
-))
-
-const ListContainer = forwardRef((props, ref) => (
-    <div ref={ref} {...props} className="space-y-2 pb-6" />
-))
 
 export default function NoteGrid({ notes, emptyTitle, emptyDescription }) {
-    const { isLoading, viewMode, togglePin, toggleArchive, deleteNote, loadMore } = useNotes()
+    const { isLoading, viewMode, togglePin, toggleArchive, deleteNote } = useNotes()
     const navigate = useNavigate()
 
-    if (isLoading) {
+    if (isLoading && (!notes || notes.length === 0)) {
         return (
             <div className={viewMode === 'grid'
                 ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3'
@@ -40,7 +25,7 @@ export default function NoteGrid({ notes, emptyTitle, emptyDescription }) {
         )
     }
 
-    if (notes.length === 0) {
+    if (!notes || notes.length === 0) {
         return (
             <EmptyState
                 title={emptyTitle || 'Nothing here'}
@@ -54,38 +39,21 @@ export default function NoteGrid({ notes, emptyTitle, emptyDescription }) {
         )
     }
 
-    if (viewMode === 'grid') {
-        return (
-            <VirtuosoGrid
-                key={viewMode} // Re-mount when changing views
-                useWindowScroll
-                data={notes}
-                endReached={loadMore}
-                components={{
-                    List: GridList,
-                    Item: GridItem
-                }}
-                itemContent={(index, note) => (
-                    <NoteCard note={note} viewMode={viewMode} onTogglePin={togglePin} onToggleArchive={toggleArchive} onDelete={deleteNote} />
-                )}
-            />
-        )
-    }
-
     return (
-        <Virtuoso
-            key={viewMode} // Re-mount when changing views
-            useWindowScroll
-            data={notes}
-            endReached={loadMore}
-            components={{
-                List: ListContainer
-            }}
-            itemContent={(index, note) => (
-                <div className="pb-2">
-                    <NoteCard note={note} viewMode={viewMode} onTogglePin={togglePin} onToggleArchive={toggleArchive} onDelete={deleteNote} />
-                </div>
-            )}
-        />
+        <div className={viewMode === 'grid'
+            ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3'
+            : 'space-y-2'
+        }>
+            {notes.map((note) => (
+                <NoteCard
+                    key={note.id}
+                    note={note}
+                    viewMode={viewMode}
+                    onTogglePin={togglePin}
+                    onToggleArchive={toggleArchive}
+                    onDelete={deleteNote}
+                />
+            ))}
+        </div>
     )
 }
