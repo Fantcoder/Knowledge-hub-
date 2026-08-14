@@ -11,23 +11,23 @@ const containerVariants = {
     hidden: { opacity: 0 },
     show: {
         opacity: 1,
-        transition: { staggerChildren: 0.1 }
+        transition: { staggerChildren: 0.04, duration: 0.2 }
     }
 }
 
 const itemVariants = {
-    hidden: { opacity: 0, y: 15 },
-    show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
+    hidden: { opacity: 0, y: 8 },
+    show: { opacity: 1, y: 0, transition: { duration: 0.18, ease: "easeOut" } }
 }
 
-function BentoCard({ title, value, subtitle, icon: Icon, className = "", delay = 0 }) {
+function BentoCard({ title, value, subtitle, icon: Icon, className = "" }) {
     return (
         <motion.div
             variants={itemVariants}
-            className={`card p-6 flex flex-col justify-between overflow-hidden relative group backdrop-blur-md bg-surface-1/60 ${className}`}
+            className={`card p-6 flex flex-col justify-between overflow-hidden relative group bg-surface-1/90 ${className}`}
         >
-            <div className="absolute -right-6 -top-6 text-ink-ghost/10 group-hover:scale-110 group-hover:-rotate-12 transition-transform duration-500">
-                <Icon size={120} />
+            <div className="absolute -right-6 -top-6 text-ink-ghost/10 group-hover:scale-105 transition-transform duration-300 pointer-events-none">
+                <Icon size={110} />
             </div>
             <div>
                 <div className="flex items-center gap-2 text-ink-muted mb-2 font-mono text-xs uppercase tracking-widest">
@@ -104,9 +104,9 @@ export default function Dashboard() {
                     <motion.div
                         variants={itemVariants}
                         onClick={() => navigate('/graph')}
-                        className="card p-6 md:col-span-1 border-accent/20 bg-accent-soft hover:bg-accent/10 cursor-pointer flex flex-col items-center justify-center text-center group transition-colors"
+                        className="card p-6 md:col-span-1 border-accent/20 bg-accent-soft hover:bg-accent/15 cursor-pointer flex flex-col items-center justify-center text-center group transition-colors"
                     >
-                        <Activity className="text-accent mb-3 group-hover:scale-110 transition-transform" size={32} />
+                        <Activity className="text-accent mb-3 group-hover:scale-105 transition-transform" size={32} />
                         <h3 className="font-serif text-xl text-ink">Enter Graph View</h3>
                         <p className="text-xs text-ink-faint mt-1">Visualize your mind</p>
                     </motion.div>

@@ -4,14 +4,14 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ═══════════════════════════════════════════════════════
+/* ─────────────────────────────────────────────────────────────────────────────
    DESIGN TOKENS — Immersive Glassmorphism & Midnight Auroras
-   ═══════════════════════════════════════════════════════ */
+   ───────────────────────────────────────────────────────────────────────────── */
 :root {
   --surface-0: #faf9f7;
-  --surface-1: rgba(255, 255, 255, 0.7);
-  --surface-2: rgba(243, 242, 239, 0.6);
-  --surface-3: rgba(232, 230, 225, 0.5);
+  --surface-1: rgba(255, 255, 255, 0.85);
+  --surface-2: rgba(243, 242, 239, 0.75);
+  --surface-3: rgba(232, 230, 225, 0.65);
 
   --ink: #111110;
   --ink-muted: #55534f;
@@ -19,27 +19,24 @@
   --ink-ghost: #b8b4ab;
 
   --accent: #d97706;
-  /* Amber-600 */
   --accent-hover: #b45309;
-  --accent-soft: rgba(253, 230, 138, 0.2);
+  --accent-soft: rgba(253, 230, 138, 0.25);
   --accent-ink: #ffffff;
 
   --danger-soft: rgba(254, 226, 226, 0.5);
 
-  --border: rgba(229, 231, 235, 0.5);
+  --border: rgba(229, 231, 235, 0.6);
   --border-strong: rgba(209, 213, 219, 0.8);
 
-  --sidebar-bg: rgba(245, 244, 241, 0.65);
+  --sidebar-bg: rgba(245, 244, 241, 0.85);
   --glow: 0 0 0 3px rgba(217, 119, 6, 0.15);
 }
 
 .dark {
-  /* Ultra-deep cinematic background */
   --surface-0: #050505;
-  /* Frosted glass surfaces */
-  --surface-1: rgba(20, 20, 20, 0.6);
-  --surface-2: rgba(30, 30, 30, 0.4);
-  --surface-3: rgba(45, 45, 45, 0.4);
+  --surface-1: rgba(18, 18, 18, 0.85);
+  --surface-2: rgba(28, 28, 28, 0.75);
+  --surface-3: rgba(40, 40, 40, 0.65);
 
   --ink: #f3f4f6;
   --ink-muted: #9ca3af;
@@ -47,7 +44,6 @@
   --ink-ghost: #374151;
 
   --accent: #f59e0b;
-  /* Amber */
   --accent-hover: #fbbf24;
   --accent-soft: rgba(245, 158, 11, 0.15);
   --accent-ink: #111827;
@@ -57,13 +53,13 @@
   --border: rgba(255, 255, 255, 0.08);
   --border-strong: rgba(255, 255, 255, 0.15);
 
-  --sidebar-bg: rgba(10, 10, 10, 0.7);
+  --sidebar-bg: rgba(12, 12, 12, 0.85);
   --glow: 0 0 0 2px rgba(245, 158, 11, 0.25), 0 0 16px rgba(245, 158, 11, 0.15);
 }
 
-/* ═══════════════════════════════════════════════════════
-   AURORA BACKGROUNDS
-   ═══════════════════════════════════════════════════════ */
+/* ─────────────────────────────────────────────────────────────────────────────
+   AURORA BACKGROUNDS (High-Performance Hardware-Accelerated Gradients)
+   ───────────────────────────────────────────────────────────────────────────── */
 .bg-aurora {
   position: fixed;
   top: 0;
@@ -72,49 +68,15 @@
   bottom: 0;
   z-index: -1;
   background: var(--surface-0);
-  overflow: hidden;
-}
-
-.bg-aurora::before,
-.bg-aurora::after {
-  content: '';
-  position: absolute;
-  width: 80vw;
-  height: 80vh;
-  border-radius: 50%;
-  filter: blur(120px);
-  opacity: 0.15;
+  background-image: 
+    radial-gradient(at 15% 15%, var(--accent-soft) 0px, transparent 45%),
+    radial-gradient(at 85% 85%, rgba(59, 130, 246, 0.06) 0px, transparent 45%);
   pointer-events: none;
-  animation: drift 20s ease-in-out infinite alternate;
 }
 
-.bg-aurora::before {
-  top: -20%;
-  left: -10%;
-  background: radial-gradient(circle, var(--accent) 0%, transparent 60%);
-}
-
-.bg-aurora::after {
-  bottom: -20%;
-  right: -10%;
-  background: radial-gradient(circle, #3b82f6 0%, transparent 60%);
-  /* Blue tint */
-  animation-delay: -10s;
-}
-
-@keyframes drift {
-  0% {
-    transform: translate(0, 0) scale(1);
-  }
-
-  100% {
-    transform: translate(10%, 15%) scale(1.1);
-  }
-}
-
-/* ═══════════════════════════════════════════════════════
+/* ─────────────────────────────────────────────────────────────────────────────
    BASE
-   ═══════════════════════════════════════════════════════ */
+   ───────────────────────────────────────────────────────────────────────────── */
 @layer base {
   * {
     @apply border-border;
@@ -150,14 +112,14 @@
   }
 }
 
-/* ═══════════════════════════════════════════════════════
-   COMPONENTS — Minimal, intentional
-   ═══════════════════════════════════════════════════════ */
+/* ─────────────────────────────────────────────────────────────────────────────
+   COMPONENTS
+   ───────────────────────────────────────────────────────────────────────────── */
 @layer components {
 
-  /* — Inputs — */
+  /* Inputs */
   .input {
-    @apply w-full px-3.5 py-2.5 text-sm rounded-xl bg-surface-2 text-ink border border-transparent placeholder:text-ink-ghost transition-all duration-200 ease-out-expo outline-none;
+    @apply w-full px-3.5 py-2.5 text-sm rounded-xl bg-surface-2 text-ink border border-transparent placeholder:text-ink-ghost transition-all duration-150 outline-none;
   }
 
   .input:focus {
@@ -173,9 +135,9 @@
     letter-spacing: 0.08em;
   }
 
-  /* — Buttons — */
+  /* Buttons */
   .btn {
-    @apply inline-flex items-center justify-center gap-2 text-sm font-medium rounded-xl transition-all duration-200 ease-out-expo outline-none select-none disabled:opacity-40 disabled:pointer-events-none;
+    @apply inline-flex items-center justify-center gap-2 text-sm font-medium rounded-xl transition-all duration-150 outline-none select-none disabled:opacity-40 disabled:pointer-events-none;
     line-height: 1;
   }
 
@@ -220,9 +182,9 @@
     background: #d04040;
   }
 
-  /* — Cards — */
+  /* Cards */
   .card {
-    @apply bg-surface-1 border border-border rounded-2xl transition-all duration-200 ease-out-expo;
+    @apply bg-surface-1 border border-border rounded-2xl transition-all duration-150;
   }
 
   .card:hover {
@@ -230,9 +192,9 @@
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
   }
 
-  /* — Sidebar links — */
+  /* Sidebar links */
   .sidebar-link {
-    @apply flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-ink-muted font-medium transition-all duration-150 ease-out-expo cursor-pointer select-none;
+    @apply flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-ink-muted font-medium transition-all duration-150 cursor-pointer select-none;
   }
 
   .sidebar-link:hover {
@@ -245,7 +207,7 @@
     color: var(--accent);
   }
 
-  /* — Tags — */
+  /* Tags */
   .tag {
     @apply inline-flex items-center px-2 py-0.5 text-2xs font-mono font-medium tracking-wider uppercase rounded-md bg-surface-2 text-ink-muted border border-transparent transition-colors duration-150;
   }
@@ -261,34 +223,30 @@
     border-color: var(--accent);
   }
 
-  /* — Status dot — */
+  /* Status dot */
   .status-dot {
     @apply w-1.5 h-1.5 rounded-full;
   }
 
-  /* — Modal backdrop — */
+  /* Modal backdrop */
   .modal-backdrop {
-    animation: fadeIn 0.2s ease;
+    animation: fadeIn 0.15s ease;
   }
 
   .modal-panel {
-    animation: fadeInUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    animation: fadeInUp 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
-  /* — Skeleton — */
+  /* Skeleton */
   .skeleton {
     @apply rounded-lg animate-pulse;
     background: var(--surface-2);
   }
 }
 
-/* ═══════════════════════════════════════════════════════
-   (React Quill styles removed — now using Tiptap editor)
-   ═══════════════════════════════════════════════════════ */
-
-/* ═══════════════════════════════════════════════════════
+/* ─────────────────────────────────────────────────────────────────────────────
    PROSE OVERRIDES — Note content rendering
-   ═══════════════════════════════════════════════════════ */
+   ───────────────────────────────────────────────────────────────────────────── */
 .note-prose h1,
 .note-prose h2,
 .note-prose h3 {

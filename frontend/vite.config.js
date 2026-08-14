@@ -12,7 +12,7 @@ export default defineConfig({
         name: 'Knowledge Hub',
         short_name: 'Brain',
         description: 'Secure Personal Knowledge Management',
-        theme_color: '#0d0d0d', // Match dark mode surface-0
+        theme_color: '#0d0d0d',
         background_color: '#0d0d0d',
         display: 'standalone',
         icons: [
@@ -29,7 +29,7 @@ export default defineConfig({
         ]
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'], // Cache all assets for offline
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
@@ -38,7 +38,7 @@ export default defineConfig({
               cacheName: 'google-fonts-cache',
               expiration: {
                 maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 365 // <== 365 days
+                maxAgeSeconds: 60 * 60 * 24 * 365
               },
               cacheableResponse: {
                 statuses: [0, 200]
@@ -52,7 +52,7 @@ export default defineConfig({
               cacheName: 'gstatic-fonts-cache',
               expiration: {
                 maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 365 // <== 365 days
+                maxAgeSeconds: 60 * 60 * 24 * 365
               },
               cacheableResponse: {
                 statuses: [0, 200]
@@ -63,6 +63,30 @@ export default defineConfig({
       }
     })
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-tiptap': [
+            '@tiptap/react',
+            '@tiptap/starter-kit',
+            '@tiptap/extension-placeholder',
+            '@tiptap/extension-link',
+            '@tiptap/extension-image',
+            '@tiptap/extension-task-list',
+            '@tiptap/extension-task-item',
+            '@tiptap/extension-highlight',
+            '@tiptap/extension-bubble-menu',
+            '@tiptap/extension-code-block-lowlight'
+          ],
+          'vendor-framer': ['framer-motion'],
+          'vendor-graph': ['react-force-graph-2d', 'd3-force'],
+          'vendor-icons': ['lucide-react']
+        }
+      }
+    }
+  },
   server: {
     port: 5173,
     proxy: {
