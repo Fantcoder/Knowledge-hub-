@@ -168,10 +168,11 @@ export default function AppleWorkspace({ initialNoteId = null }) {
     }
 
     // Quick Action Handlers
-    const handleTogglePin = async () => {
-        if (!selectedNoteId) return
+    const handleTogglePin = async (id = null) => {
+        const targetId = id || selectedNoteId
+        if (!targetId) return
         try {
-            const res = await noteService.pin(selectedNoteId)
+            const res = await noteService.pin(targetId)
             dispatch({ type: 'UPDATE_NOTE', payload: res.data.data })
             toast.success(res.data.data.isPinned ? 'Pinned to top' : 'Unpinned')
         } catch {
@@ -179,10 +180,23 @@ export default function AppleWorkspace({ initialNoteId = null }) {
         }
     }
 
-    const handleToggleShare = async () => {
-        if (!selectedNoteId) return
+    const handleToggleArchive = async (id = null) => {
+        const targetId = id || selectedNoteId
+        if (!targetId) return
         try {
-            const res = await noteService.toggleShare(selectedNoteId)
+            const res = await noteService.archive(targetId)
+            dispatch({ type: 'UPDATE_NOTE', payload: res.data.data })
+            toast.success(res.data.data.isArchived ? 'Note archived' : 'Note unarchived')
+        } catch {
+            toast.error('Failed to archive note')
+        }
+    }
+
+    const handleToggleShare = async (id = null) => {
+        const targetId = id || selectedNoteId
+        if (!targetId) return
+        try {
+            const res = await noteService.toggleShare(targetId)
             dispatch({ type: 'UPDATE_NOTE', payload: res.data.data })
             if (res.data.data.isShared) {
                 const url = `${window.location.origin}/shared/${res.data.data.shareSlug}`
@@ -196,13 +210,16 @@ export default function AppleWorkspace({ initialNoteId = null }) {
         }
     }
 
-    const handleDelete = async () => {
-        if (!selectedNoteId) return
+    const handleDelete = async (id = null) => {
+        const targetId = id || selectedNoteId
+        if (!targetId) return
         try {
-            await noteService.delete(selectedNoteId)
-            dispatch({ type: 'REMOVE_NOTE', payload: selectedNoteId })
-            setSelectedNoteId(null)
-            setMobileView('list')
+            await noteService.delete(targetId)
+            dispatch({ type: 'REMOVE_NOTE', payload: targetId })
+            if (selectedNoteId === targetId) {
+                setSelectedNoteId(null)
+                setMobileView('list')
+            }
             toast.success('Moved to trash')
         } catch {
             toast.error('Failed to delete note')
@@ -465,21 +482,21 @@ export default function AppleWorkspace({ initialNoteId = null }) {
                                 {!isCreatingNew && (
                                     <>
                                         <button
-                                            onClick={handleTogglePin}
+                                            onClick={() => handleTogglePin()}
                                             className={`p-1.5 rounded-md hover:bg-surface-2 text-ink-muted hover:text-accent transition-colors ${selectedNote?.isPinned ? 'text-accent' : ''}`}
                                             title="Pin Note"
                                         >
                                             <Pin size={15} className={selectedNote?.isPinned ? 'fill-accent' : ''} />
                                         </button>
                                         <button
-                                            onClick={handleToggleShare}
+                                            onClick={() => handleToggleShare()}
                                             className={`p-1.5 rounded-md hover:bg-surface-2 text-ink-muted hover:text-ink transition-colors ${selectedNote?.isShared ? 'text-accent' : ''}`}
                                             title="Share Note"
                                         >
                                             <Share2 size={15} />
                                         </button>
                                         <button
-                                            onClick={handleDelete}
+                                            onClick={() => handleDelete()}
                                             className="p-1.5 rounded-md hover:bg-danger-soft text-ink-muted hover:text-danger transition-colors"
                                             title="Move to Trash"
                                         >
