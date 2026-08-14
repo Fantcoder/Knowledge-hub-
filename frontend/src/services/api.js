@@ -5,15 +5,13 @@ const api = axios.create({
     baseURL: API_BASE_URL,
     headers: { 'Content-Type': 'application/json' },
     timeout: 30000,
-    // withCredentials: true tells the browser to send httpOnly cookies automatically.
-    // This is how the refreshToken cookie reaches /api/auth/refresh without JS touching it.
-    withCredentials: true,
+    // No withCredentials needed — we use localStorage for the refresh token,
+    // not cookies. This avoids cross-domain cookie blocking (Vercel vs Render).
 })
 
-// ─── Access token injection ────────────────────────────────────────────────────
-// accessToken is stored in React state (memory), not localStorage.
-// Components that need authenticated requests call setApiToken(token) after login.
-// This is much safer than localStorage — XSS cannot read a memory variable.
+// --- Access token injection --------------------------------------------------
+// accessToken stays in React memory (set via setApiToken after login/refresh).
+// It is never written to localStorage — memory-only tokens cannot be read by XSS.
 
 let _accessToken = null
 
@@ -36,7 +34,11 @@ api.interceptors.request.use(
     (error) => Promise.reject(error)
 )
 
-// ─── Silent token refresh on 401 ─────────────────────────────────────────────
+// --- Silent token refresh on 401 --------------------------------------------
+// When the access token expires the backend returns 401.
+// We intercept it, use the refreshToken from localStorage to get a new
+// accessToken from /api/auth/refresh, then replay the original request.
+
 let isRefreshing = false
 let failedQueue = []
 
@@ -55,7 +57,7 @@ api.interceptors.response.use(
         const isAuthError = error.response?.status === 401 || error.response?.status === 403
 
         if (isAuthError && !originalRequest._retry) {
-            // Don't retry auth endpoints themselves — prevents infinite loops
+            // Never retry auth endpoints themselves — prevents infinite loops
             if (originalRequest.url?.includes('/auth/')) {
                 return Promise.reject(error)
             }
@@ -75,15 +77,19 @@ api.interceptors.response.use(
             isRefreshing = true
 
             try {
-                // Browser automatically sends the httpOnly refreshToken cookie.
-                // We do NOT manually attach any token here.
+                const storedRefreshToken = localStorage.getItem('refreshToken')
+                if (!storedRefreshToken) {
+                    throw new Error('No refresh token in storage')
+                }
+
                 const response = await axios.post(
                     `${API_BASE_URL}/auth/refresh`,
-                    {},
-                    { withCredentials: true }
+                    { refreshToken: storedRefreshToken }
                 )
-                const { accessToken } = response.data.data
+                const { accessToken, refreshToken: newRefreshToken } = response.data.data
 
+                // Rotate the stored refresh token
+                localStorage.setItem('refreshToken', newRefreshToken)
                 setApiToken(accessToken)
                 processQueue(null, accessToken)
 
@@ -104,6 +110,7 @@ api.interceptors.response.use(
 
 function clearAuthAndRedirect() {
     setApiToken(null)
+    localStorage.removeItem('refreshToken')
     localStorage.removeItem('user')
     window.location.href = '/login'
 }

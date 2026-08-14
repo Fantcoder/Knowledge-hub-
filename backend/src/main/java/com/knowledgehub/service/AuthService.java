@@ -153,7 +153,7 @@ public class AuthService {
     private AuthResponse buildAuthResponse(User user, String accessToken, String refreshToken) {
         return AuthResponse.builder()
                 .accessToken(accessToken)
-                .refreshTokenValue(refreshToken)   // @JsonIgnore — goes to cookie, not JSON body
+                .refreshToken(refreshToken)   // @JsonIgnore ??? goes to cookie, not JSON body
                 .tokenType("Bearer")
                 .userId(user.getId())
                 .username(user.getUsername())

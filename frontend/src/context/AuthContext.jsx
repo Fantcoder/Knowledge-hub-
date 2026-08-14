@@ -1,8 +1,13 @@
-﻿import { createContext, useContext, useReducer, useEffect, useCallback } from 'react'
+import { createContext, useContext, useReducer, useEffect, useCallback } from 'react'
 import { authService } from '../services/authService'
 import { setApiToken } from '../services/api'
 
 const AuthContext = createContext(null)
+
+// ─── State ────────────────────────────────────────────────────────────────────
+// accessToken  → React memory only (not localStorage, cannot be read by XSS)
+// refreshToken → localStorage (needed to survive page reload; rotated on every use)
+// user         → localStorage (non-sensitive: userId, username, email only)
 
 const initialState = {
     user: JSON.parse(localStorage.getItem('user') || 'null'),
@@ -30,43 +35,62 @@ function authReducer(state, action) {
     }
 }
 
-// Extract only user-identity fields from AuthResponse — not tokenType or accessToken
-function extractUser(responseData) {
-    return {
-        userId: responseData.userId,
-        username: responseData.username,
-        email: responseData.email,
-    }
+// Extract only identity fields from the AuthResponse DTO.
+// AuthResponse: { accessToken, refreshToken, tokenType, userId, username, email }
+// We store only userId/username/email in localStorage — never tokens in user object.
+function extractUser(data) {
+    return { userId: data.userId, username: data.username, email: data.email }
+}
+
+function saveSession(accessToken, refreshToken, user) {
+    localStorage.setItem('refreshToken', refreshToken)
+    localStorage.setItem('user', JSON.stringify(user))
+    setApiToken(accessToken)
+}
+
+function clearSession() {
+    localStorage.removeItem('refreshToken')
+    localStorage.removeItem('user')
+    setApiToken(null)
 }
 
 export function AuthProvider({ children }) {
     const [state, dispatch] = useReducer(authReducer, initialState)
 
+    // ─── Silent session restore on page reload ────────────────────────────────
+    // On reload, React memory is wiped but localStorage persists.
+    // We read the refreshToken from localStorage and call /api/auth/refresh to
+    // get a fresh accessToken, restoring the session transparently.
     useEffect(() => {
         const restoreSession = async () => {
+            const storedRefreshToken = localStorage.getItem('refreshToken')
+            if (!storedRefreshToken) {
+                dispatch({ type: 'LOGOUT' })
+                return
+            }
             try {
-                const { data } = await authService.refresh()
-                const { accessToken } = data.data
+                const { data } = await authService.refresh(storedRefreshToken)
+                const { accessToken, refreshToken } = data.data
                 const user = extractUser(data.data)
-                localStorage.setItem('user', JSON.stringify(user))
-                setApiToken(accessToken)
+                saveSession(accessToken, refreshToken, user)
                 dispatch({ type: 'LOGIN_SUCCESS', payload: { accessToken, user } })
             } catch {
-                localStorage.removeItem('user')
+                // Refresh token invalid or expired — clear everything
+                clearSession()
                 dispatch({ type: 'LOGOUT' })
             }
         }
         restoreSession()
     }, [])
 
+    // ─── Login ────────────────────────────────────────────────────────────────
     const login = useCallback(async (credentials) => {
         dispatch({ type: 'SET_LOADING', payload: true })
         try {
             const { data } = await authService.login(credentials)
-            const { accessToken } = data.data
+            const { accessToken, refreshToken } = data.data
             const user = extractUser(data.data)
-            localStorage.setItem('user', JSON.stringify(user))
-            setApiToken(accessToken)
+            saveSession(accessToken, refreshToken, user)
             dispatch({ type: 'LOGIN_SUCCESS', payload: { accessToken, user } })
             return { success: true }
         } catch (error) {
@@ -76,14 +100,14 @@ export function AuthProvider({ children }) {
         }
     }, [])
 
+    // ─── Google Login ─────────────────────────────────────────────────────────
     const googleLogin = useCallback(async (idToken) => {
         dispatch({ type: 'SET_LOADING', payload: true })
         try {
             const { data } = await authService.googleLogin(idToken)
-            const { accessToken } = data.data
+            const { accessToken, refreshToken } = data.data
             const user = extractUser(data.data)
-            localStorage.setItem('user', JSON.stringify(user))
-            setApiToken(accessToken)
+            saveSession(accessToken, refreshToken, user)
             dispatch({ type: 'LOGIN_SUCCESS', payload: { accessToken, user } })
             return { success: true }
         } catch (error) {
@@ -93,14 +117,14 @@ export function AuthProvider({ children }) {
         }
     }, [])
 
+    // ─── Register ─────────────────────────────────────────────────────────────
     const register = useCallback(async (formData) => {
         dispatch({ type: 'SET_LOADING', payload: true })
         try {
             const { data } = await authService.register(formData)
-            const { accessToken } = data.data
+            const { accessToken, refreshToken } = data.data
             const user = extractUser(data.data)
-            localStorage.setItem('user', JSON.stringify(user))
-            setApiToken(accessToken)
+            saveSession(accessToken, refreshToken, user)
             dispatch({ type: 'LOGIN_SUCCESS', payload: { accessToken, user } })
             return { success: true }
         } catch (error) {
@@ -110,18 +134,19 @@ export function AuthProvider({ children }) {
         }
     }, [])
 
+    // ─── Logout ───────────────────────────────────────────────────────────────
     const logout = useCallback(async () => {
         try {
             await authService.logout()
         } catch (_) {
-            // ignore errors — clean up locally anyway
+            // ignore network errors — clean up locally anyway
         } finally {
-            setApiToken(null)
-            localStorage.removeItem('user')
+            clearSession()
             dispatch({ type: 'LOGOUT' })
         }
     }, [])
 
+    // ─── Dark mode ────────────────────────────────────────────────────────────
     useEffect(() => {
         const theme = localStorage.getItem('theme') || 'dark'
         if (theme === 'dark') document.documentElement.classList.add('dark')
