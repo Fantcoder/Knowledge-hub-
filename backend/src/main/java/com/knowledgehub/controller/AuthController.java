@@ -1,4 +1,4 @@
-package com.knowledgehub.controller;
+﻿package com.knowledgehub.controller;
 
 import com.knowledgehub.dto.request.LoginRequest;
 import com.knowledgehub.dto.request.RegisterRequest;
@@ -28,7 +28,7 @@ public class AuthController {
     @Value("${app.cookie.secure:true}")
     private boolean cookieSecure;
 
-    // ─── Register ────────────────────────────────────────────────────────────
+    // â”€â”€â”€ Register â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<AuthResponse>> register(
@@ -46,7 +46,7 @@ public class AuthController {
                 .body(ApiResponse.success("Registration successful", response));
     }
 
-    // ─── Login ───────────────────────────────────────────────────────────────
+    // â”€â”€â”€ Login â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<AuthResponse>> login(
@@ -63,7 +63,7 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.success("Login successful", response));
     }
 
-    // ─── Google OAuth ────────────────────────────────────────────────────────
+    // â”€â”€â”€ Google OAuth â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     @PostMapping("/google")
     public ResponseEntity<ApiResponse<AuthResponse>> googleLogin(
@@ -75,14 +75,14 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.success("Google Login successful", response));
     }
 
-    // ─── Refresh ─────────────────────────────────────────────────────────────
+    // â”€â”€â”€ Refresh â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     @PostMapping("/refresh")
     public ResponseEntity<ApiResponse<AuthResponse>> refresh(
             HttpServletRequest httpRequest,
             HttpServletResponse httpResponse) {
 
-        // Read refresh token from httpOnly cookie — NOT from request body.
+        // Read refresh token from httpOnly cookie â€” NOT from request body.
         String refreshToken = extractRefreshTokenCookie(httpRequest);
 
         if (refreshToken == null || refreshToken.isBlank()) {
@@ -96,7 +96,7 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.success("Token refreshed", response));
     }
 
-    // ─── Logout ──────────────────────────────────────────────────────────────
+    // â”€â”€â”€ Logout â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse<Void>> logout(HttpServletResponse httpResponse) {
@@ -105,12 +105,12 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.success("Logged out successfully", null));
     }
 
-    // ─── Cookie helpers ───────────────────────────────────────────────────────
+    // â”€â”€â”€ Cookie helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     /**
      * Sets the refresh token as an httpOnly, Secure, SameSite=Strict cookie.
      * Path is scoped to /api/auth/refresh so the cookie is ONLY sent to that
-     * endpoint — not leaked on every API call.
+     * endpoint â€” not leaked on every API call.
      */
     private void setRefreshTokenCookie(HttpServletResponse response, String refreshToken) {
         if (refreshToken == null) return;
@@ -120,7 +120,7 @@ public class AuthController {
         String sameSite = cookieSecure ? "None" : "Lax";
         
         String cookieValue = String.format(
-                "refreshToken=%s; Max-Age=%d; Path=/api/auth/refresh; HttpOnly; %sSameSite=%s",
+                "refreshToken=%s; Max-Age=%d; Path=/api/auth; HttpOnly; %sSameSite=%s",
                 refreshToken,
                 7 * 24 * 60 * 60, // 7 days in seconds
                 cookieSecure ? "Secure; " : "",
@@ -135,7 +135,7 @@ public class AuthController {
     private void clearRefreshTokenCookie(HttpServletResponse response) {
         String sameSite = cookieSecure ? "None" : "Lax";
         String cookieValue = String.format(
-                "refreshToken=; Max-Age=0; Path=/api/auth/refresh; HttpOnly; %sSameSite=%s",
+                "refreshToken=; Max-Age=0; Path=/api/auth; HttpOnly; %sSameSite=%s",
                 cookieSecure ? "Secure; " : "",
                 sameSite
         );
@@ -156,3 +156,4 @@ public class AuthController {
         return null;
     }
 }
+
