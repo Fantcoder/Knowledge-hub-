@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, Suspense, lazy } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import { Analytics } from '@vercel/analytics/react'
@@ -7,7 +7,6 @@ import { NotesProvider } from './context/NotesContext'
 import ErrorBoundary from './components/common/ErrorBoundary'
 import ProtectedRoute from './components/common/ProtectedRoute'
 import Layout from './components/layout/Layout'
-import { Suspense, lazy } from 'react'
 
 const QuickCapture = lazy(() => import('./components/capture/QuickCapture'))
 const AiChatPanel = lazy(() => import('./components/ai/AiChatPanel'))
@@ -28,7 +27,7 @@ const SharedNoteView = lazy(() => import('./pages/SharedNoteView'))
 const NotFound = lazy(() => import('./pages/NotFound'))
 
 const PageLoader = () => (
-    <div className="flex items-center justify-center min-h-[50vh]">
+    <div className="flex items-center justify-center min-h-screen bg-surface-0">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent"></div>
     </div>
 )
@@ -75,20 +74,19 @@ function GlobalOverlays() {
             {/* Floating AI Chat Button */}
             <button
                 onClick={() => setAiChatOpen(true)}
-                className="fixed bottom-6 right-6 z-30 w-12 h-12 rounded-full 
+                className="fixed bottom-6 right-6 z-30 w-11 h-11 rounded-full 
                            bg-accent text-accent-ink shadow-lg hover:shadow-xl 
-                           hover:scale-105 active:scale-95 transition-all duration-200
-                           flex items-center justify-center text-xl"
+                           hover:scale-105 active:scale-95 transition-all duration-150
+                           flex items-center justify-center text-lg"
                 title="Ask your brain (Ctrl+Shift+L)"
             >
-                🧠
+                ✨
             </button>
         </>
     )
 }
 
 export default function App() {
-
     return (
         <ErrorBoundary>
             <div className="bg-aurora"></div>
@@ -101,16 +99,16 @@ export default function App() {
                                 duration: 3000,
                                 style: {
                                     borderRadius: '12px',
-                                    fontFamily: '"DM Sans", sans-serif',
+                                    fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
                                     fontSize: '13px',
                                     fontWeight: '500',
                                     background: 'var(--surface-1)',
                                     color: 'var(--ink)',
                                     border: '1px solid var(--border)',
-                                    boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
+                                    boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
                                 },
                                 success: { iconTheme: { primary: 'var(--accent)', secondary: 'var(--accent-ink)' } },
-                                error: { iconTheme: { primary: '#e55353', secondary: '#fff' } },
+                                error: { iconTheme: { primary: '#ff3b30', secondary: '#fff' } },
                             }}
                         />
 
@@ -126,8 +124,11 @@ export default function App() {
 
                                 {/* Protected */}
                                 <Route element={<ProtectedRoute />}>
+                                    {/* Apple 3-Column Workspace */}
+                                    <Route path="/dashboard" element={<Dashboard />} />
+
+                                    {/* Other Tools & Library Pages */}
                                     <Route element={<Layout />}>
-                                        <Route path="/dashboard" element={<Dashboard />} />
                                         <Route path="/graph" element={<Graph />} />
                                         <Route path="/notes/new" element={<NoteCreate />} />
                                         <Route path="/notes/:id" element={<NoteView />} />
