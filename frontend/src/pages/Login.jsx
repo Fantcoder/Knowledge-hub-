@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, Link, Navigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import toast from 'react-hot-toast'
 import { GoogleLogin } from '@react-oauth/google'
@@ -8,8 +8,13 @@ export default function Login() {
     const [form, setForm] = useState({ username: '', password: '' })
     const [showPw, setShowPw] = useState(false)
     const [loading, setLoading] = useState(false)
-    const { login, googleLogin } = useAuth()
+    const { login, googleLogin, isAuthenticated, isLoading } = useAuth()
     const navigate = useNavigate()
+
+    // If already authenticated, bounce to dashboard
+    if (!isLoading && isAuthenticated) {
+        return <Navigate to="/dashboard" replace />
+    }
 
     const handleGoogleSuccess = async (credentialResponse) => {
         setLoading(true)
@@ -50,7 +55,7 @@ export default function Login() {
                 </div>
                 {/* Subtle decorative dots */}
                 <div className="absolute bottom-8 left-8 text-2xs font-mono text-ink-ghost">
-                    personal knowledge hub · v1.0
+                    personal knowledge hub • v1.0
                 </div>
             </div>
 

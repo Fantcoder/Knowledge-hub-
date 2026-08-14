@@ -1,16 +1,20 @@
 import { useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, Link, Navigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import toast from 'react-hot-toast'
-
 import { GoogleLogin } from '@react-oauth/google'
 
 export default function Register() {
     const [form, setForm] = useState({ username: '', email: '', password: '' })
     const [showPw, setShowPw] = useState(false)
     const [loading, setLoading] = useState(false)
-    const { register, googleLogin } = useAuth()
+    const { register, googleLogin, isAuthenticated, isLoading } = useAuth()
     const navigate = useNavigate()
+
+    // If already authenticated, bounce to dashboard
+    if (!isLoading && isAuthenticated) {
+        return <Navigate to="/dashboard" replace />
+    }
 
     const handleGoogleSuccess = async (credentialResponse) => {
         setLoading(true)
